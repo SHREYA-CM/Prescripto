@@ -22,13 +22,9 @@ const app = express();
 
 /* ---------------------------------------------------
    🔥 UNIVERSAL CORS FIX — WORKS WITH ANY PORT
-   - Allow all localhost and 127.0.0.1 origins (any port)
-   - Accept PATCH & OPTIONS
-   - Return preflight responses cleanly
 --------------------------------------------------- */
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests from no origin (eg. Postman, server-to-server) and localhost origins
     if (
       !origin ||
       origin.startsWith("http://localhost") ||
@@ -42,35 +38,39 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-  preflightContinue: false, // respond to preflight here (do not pass to next)
+  preflightContinue: false,
   optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Pre-flight for all routes
+app.options("*", cors(corsOptions));
 
-// Extra safety: set CORS headers for all responses
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
-  // If it's a preflight request, end it here
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, Accept"
+  );
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
   next();
 });
 
-// Body parser (JSON + urlencoded just in case)
+// Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static upload folder
+// Static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 // Test route
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.send("Prescripto API is running...");
 });
 
@@ -81,6 +81,20 @@ app.use("/api/auth", authRoutes);
 app.use("/api", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/admin", adminRoutes);
+
+/* ---------------------------------------------------
+   🔥 SERVE FRONTEND (DEPLOYMENT)
+--------------------------------------------------- */
+
+const frontendPath = path.join(__dirname, "../frontend/dist");
+
+// Serve static files (Vite build)
+app.use(express.static(frontendPath));
+
+// Catch-all route for React Router
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 /* ---------------------------------------------------
    🔥 START SERVER
