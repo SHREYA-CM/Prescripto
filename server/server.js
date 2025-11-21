@@ -65,8 +65,8 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static uploads folder
-app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
+// Static uploads folder (server/uploads)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Test route
 app.get("/api", (req, res) => {
@@ -85,10 +85,17 @@ app.use("/api/admin", adminRoutes);
    🔥 SERVE FRONTEND (DEPLOYMENT)
 --------------------------------------------------- */
 
-// Correct path for your frontend
-const frontendPath = path.join(__dirname, "frontend/dist");
+// IMPORTANT:
+// Project structure:
+//   root/
+//     frontend/   <-- Vite build goes to frontend/dist
+//     server/
+//       server.js (this file)
+//
+// So from /server we go one level up (..) then into frontend/dist
+const frontendPath = path.join(__dirname, "..", "frontend", "dist");
 
-// Serve static files
+// Serve static files (JS, CSS, images from Vite build)
 app.use(express.static(frontendPath));
 
 // Catch-all route for React Router
