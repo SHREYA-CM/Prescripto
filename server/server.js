@@ -1,4 +1,4 @@
-// server.js (updated)
+// server.js (FINAL FIXED VERSION)
 
 const express = require("express");
 const dotenv = require("dotenv");
@@ -21,7 +21,7 @@ connectDB();
 const app = express();
 
 /* ---------------------------------------------------
-   🔥 UNIVERSAL CORS FIX — WORKS WITH ANY PORT
+   🔥 UNIVERSAL CORS FIX 
 --------------------------------------------------- */
 const corsOptions = {
   origin: function (origin, callback) {
@@ -38,8 +38,6 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-  preflightContinue: false,
-  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
@@ -56,6 +54,7 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, Accept"
   );
+
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
@@ -86,9 +85,10 @@ app.use("/api/admin", adminRoutes);
    🔥 SERVE FRONTEND (DEPLOYMENT)
 --------------------------------------------------- */
 
-const frontendPath = path.join(__dirname, "../frontend/dist");
+// Correct path for your frontend
+const frontendPath = path.join(__dirname, "frontend/dist");
 
-// Serve static files (Vite build)
+// Serve static files
 app.use(express.static(frontendPath));
 
 // Catch-all route for React Router
