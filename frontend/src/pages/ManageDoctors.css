@@ -1,0 +1,65 @@
+.doctor-list h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.doctor-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.doctor-list th, .doctor-list td {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.doctor-list th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.doctor-list tr:nth-of-type(even) {
+  background-color: #f2f2f2;
+}
+
+.doctor-list tr:hover {
+  background-color: #e9ecef;
+}
+
+.doctor-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.add-button, .edit-btn, .delete-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: white;
+}
+
+.add-button {
+  background-color: #0d6efd; /* Blue */
+}
+
+.edit-btn {
+  background-color: #ffc107; /* Yellow */
+  margin-right: 5px;
+}
+
+.delete-btn {
+  background-color: #dc3545; /* Red */
+}

@@ -1,0 +1,38 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 3%; /* Adjusted padding */
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Adjusted gap */
+}
+
+.navbar-left .logo {
+  /* 👇 Increased logo size */
+  width: 50px; 
+}
+
+.navbar-left .navbar-text h2 {
+  /* 👇 Increased font size */
+  font-size: 26px; 
+  font-weight: 600;
+  margin: 0;
+}
+
+.navbar-left .navbar-text p {
+  font-size: 14px;
+  color: grey;
+  margin: 0;
+}
+
+.navbar .profile-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+}

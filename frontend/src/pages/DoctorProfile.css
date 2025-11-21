@@ -1,0 +1,179 @@
+/* General Page Styles */
+.profile-page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f7fafc;
+  min-height: 100vh;
+  color: #4a5568;
+}
+
+.profile-main-header {
+  padding: 1rem 2rem;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.back-link {
+  text-decoration: none;
+  color: #4299e1;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.profile-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+/* Profile Card */
+.profile-card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* Profile Header */
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 2.5rem 2rem;
+  background-color: #edf2f7;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.profile-image {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-info {
+    line-height: 1.4;
+}
+
+.doctor-name {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.doctor-speciality {
+  margin: 0.25rem 0 0.5rem 0;
+  font-size: 1.125rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.doctor-experience {
+    color: #4a5568;
+    font-size: 1rem;
+}
+
+/* Profile Body & Sections */
+.profile-body {
+  padding: 2.5rem;
+}
+
+.section {
+  margin-bottom: 2.5rem;
+}
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #2d3748;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section p {
+  line-height: 1.7;
+}
+
+.booking-section {
+  margin-top: 2.5rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 2.5rem;
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.date-input {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e0;
+  width: 100%;
+  max-width: 280px;
+  box-sizing: border-box;
+}
+
+/* Time Slots */
+.time-slots-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.time-slot-btn {
+  padding: 0.6rem 1.25rem;
+  border: 1px solid #3182ce;
+  background-color: #ebf8ff;
+  color: #3182ce;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+}
+
+.time-slot-btn:hover {
+  background-color: #bee3f8;
+}
+
+.time-slot-btn.selected {
+  background-color: #3182ce;
+  color: white;
+  border-color: #3182ce;
+}
+
+/* Confirm Button */
+.confirm-booking-btn {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #38a169;
+  color: white;
+  font-size: 1.125rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: background-color 0.2s;
+}
+
+.confirm-booking-btn:hover {
+  background-color: #2f855a;
+}
