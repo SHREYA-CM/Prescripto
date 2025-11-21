@@ -21,20 +21,12 @@ connectDB();
 const app = express();
 
 /* ---------------------------------------------------
-   🔥 UNIVERSAL CORS FIX 
+   🔥 CORS (FIXED: allow your Render domain + others)
 --------------------------------------------------- */
+// IMPORTANT CHANGE: no more manual "Not allowed by CORS" error.
+// `origin: true` lets cors reflect the incoming Origin header.
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (
-      !origin ||
-      origin.startsWith("http://localhost") ||
-      origin.startsWith("http://127.0.0.1")
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: true, // allow all origins (including your Render URL)
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
@@ -43,6 +35,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
+// (Optional extra header middleware – safe to keep)
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Credentials", "true");
