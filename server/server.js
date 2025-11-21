@@ -7,7 +7,7 @@ const path = require("path");
 const connectDB = require("./config/db");
 
 // Routes
-const authRoutes = require("./routes/authroutes");
+const authRoutes = require("./routes/authRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
