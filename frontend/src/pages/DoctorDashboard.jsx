@@ -21,7 +21,11 @@ const DoctorDashboard = () => {
   });
 
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [savingProfile, setSavingProfile] = useState(false); // ⭐ NEW
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // ⭐ NEW: edit + saved state
+  const [isEditing, setIsEditing] = useState(false);
+  const [justSaved, setJustSaved] = useState(true);
 
   /* -----------------------------------------------------------
      LOAD DOCTOR APPOINTMENTS (ONLY ONCE)
@@ -124,6 +128,9 @@ const DoctorDashboard = () => {
           fees: doc?.fees || "",
           about: doc?.about || "",
         });
+
+        setIsEditing(false);
+        setJustSaved(true);
       } catch (err) {
         console.error("Profile load error:", err);
         toast.error("Failed to load profile");
@@ -136,16 +143,18 @@ const DoctorDashboard = () => {
   }, []);
 
   /* -----------------------------------------------------------
-     SAVE DOCTOR PROFILE  ⭐ NEW
+     SAVE DOCTOR PROFILE
   -------------------------------------------------------------*/
   const handleSaveProfile = async () => {
     try {
       setSavingProfile(true);
 
-      // Adjust endpoint if your backend uses a different route
+      // TODO: change endpoint if your backend is different
       await api.put("/api/doctor/profile", profileForm);
 
       toast.success("Profile updated successfully");
+      setIsEditing(false);
+      setJustSaved(true);
     } catch (err) {
       console.error("Profile update error:", err);
       const msg =
@@ -292,6 +301,7 @@ const DoctorDashboard = () => {
                   <input
                     type="text"
                     value={profileForm.speciality}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       setProfileForm({
                         ...profileForm,
@@ -306,6 +316,7 @@ const DoctorDashboard = () => {
                   <input
                     type="text"
                     value={profileForm.degree}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       setProfileForm({
                         ...profileForm,
@@ -321,6 +332,7 @@ const DoctorDashboard = () => {
                     <input
                       type="number"
                       value={profileForm.experience}
+                      disabled={!isEditing}
                       onChange={(e) =>
                         setProfileForm({
                           ...profileForm,
@@ -335,6 +347,7 @@ const DoctorDashboard = () => {
                     <input
                       type="number"
                       value={profileForm.fees}
+                      disabled={!isEditing}
                       onChange={(e) =>
                         setProfileForm({
                           ...profileForm,
@@ -350,6 +363,7 @@ const DoctorDashboard = () => {
                   <textarea
                     rows="4"
                     value={profileForm.about}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       setProfileForm({
                         ...profileForm,
@@ -359,13 +373,49 @@ const DoctorDashboard = () => {
                   />
                 </div>
 
-                <button
-                  className="save-btn"
-                  onClick={handleSaveProfile}
-                  disabled={savingProfile}
-                >
-                  {savingProfile ? "Saving..." : "Save Profile"}
-                </button>
+                {/* ⭐ BUTTONS AREA */}
+                <div className="form-actions">
+                  {isEditing ? (
+                    <>
+                      <button
+                        className="save-btn"
+                        onClick={handleSaveProfile}
+                        disabled={savingProfile}
+                        type="button"
+                      >
+                        {savingProfile ? "Saving..." : "Save Profile"}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="cancel-btn"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setJustSaved(false);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="edit-btn"
+                        onClick={() => {
+                          setIsEditing(true);
+                          setJustSaved(false);
+                        }}
+                      >
+                        Edit Profile
+                      </button>
+
+                      <button type="button" className="saved-pill" disabled>
+                        {justSaved ? "Saved" : "View Only"}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
