@@ -300,3 +300,93 @@
   font-size: 14px;
   line-height: 1.4;
 }
+
+/* ------------------------------------
+   SAVE PROFILE BUTTON (NEW NICE DESIGN)
+--------------------------------------- */
+.save-btn {
+  width: 100%;
+  padding: 12px 0;
+  background: #4F46E5;   /* Indigo */
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.save-btn:hover {
+  background: #4338CA;
+}
+
+.save-btn:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------
+   FORM ROWS & INPUT STYLING
+--------------------------------------- */
+.profile-form {
+  margin-top: 1rem;
+}
+
+.form-row {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row label {
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 5px;
+}
+
+.form-row input,
+.form-row textarea {
+  padding: 10px 14px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #2d3748;
+  outline: none;
+  transition: border 0.2s ease;
+}
+
+.form-row input:focus,
+.form-row textarea:focus {
+  border-color: #4F46E5;
+}
+
+/* Two columns inline */
+.form-row.inline {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row.inline > div {
+  flex: 1;
+}
+
+/* ------------------------------------
+   PROFILE PREVIEW BOX
+--------------------------------------- */
+.profile-preview {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.profile-preview h3 {
+  margin-bottom: 1rem;
+  color: #1a202c;
+}
+
+.preview-about h4 {
+  margin-bottom: 0.3rem;
+}
