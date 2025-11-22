@@ -177,3 +177,71 @@
 .confirm-booking-btn:hover {
   background-color: #2f855a;
 }
+
+.form-actions {
+  margin-top: 1.2rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Edit + Save Buttons */
+.edit-btn,
+.save-btn,
+.cancel-btn {
+  padding: 0.7rem 1.6rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+/* Purple primary button (Save) */
+.save-btn {
+  background: #4f46e5;
+  color: #fff;
+  flex: 1;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.save-btn:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
+
+/* Edit button */
+.edit-btn {
+  background: #2563eb;
+  color: #fff;
+  flex: 1;
+}
+
+.edit-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Cancel button (when editing) */
+.cancel-btn {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.cancel-btn:hover {
+  background: #d1d5db;
+}
+
+/* Saved status pill */
+.saved-pill {
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background: #ecfdf5;
+  color: #16a34a;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: default;
+}
