@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useContext, useMemo } from "react";
-import api from "../../src/api/axios.js";                                                                                   
+import api from "../../src/api/axios.js";
 import { AppContext } from "../context/AppContext.jsx";
 import toast, { Toaster } from "react-hot-toast";
 import "./DoctorDashboard.css";
 
 const DoctorDashboard = () => {
-  const { user, token } = useContext(AppContext);
+  const { user } = useContext(AppContext);
 
   const [appointments, setAppointments] = useState([]);
   const [loadingAppt, setLoadingAppt] = useState(true);
@@ -21,6 +21,7 @@ const DoctorDashboard = () => {
   });
 
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false); // ⭐ NEW
 
   /* -----------------------------------------------------------
      LOAD DOCTOR APPOINTMENTS (ONLY ONCE)
@@ -30,7 +31,7 @@ const DoctorDashboard = () => {
       setLoadingAppt(true);
 
       const res = await api.get("/api/appointments/doctor");
-      
+
       if (Array.isArray(res.data)) {
         setAppointments(res.data);
       }
@@ -42,7 +43,6 @@ const DoctorDashboard = () => {
     }
   };
 
-  // FIXED — removed token dependency to prevent infinite loop
   useEffect(() => {
     loadAppointments();
   }, []);
@@ -91,7 +91,9 @@ const DoctorDashboard = () => {
     const todayStr = new Date().toISOString().split("T")[0];
     let list = [...appointments];
 
-    list.sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate));
+    list.sort(
+      (a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate)
+    );
 
     if (filter === "today") {
       list = list.filter((a) => a.appointmentDate === todayStr);
@@ -124,6 +126,7 @@ const DoctorDashboard = () => {
         });
       } catch (err) {
         console.error("Profile load error:", err);
+        toast.error("Failed to load profile");
       } finally {
         setLoadingProfile(false);
       }
@@ -131,6 +134,27 @@ const DoctorDashboard = () => {
 
     fetchProfile();
   }, []);
+
+  /* -----------------------------------------------------------
+     SAVE DOCTOR PROFILE  ⭐ NEW
+  -------------------------------------------------------------*/
+  const handleSaveProfile = async () => {
+    try {
+      setSavingProfile(true);
+
+      // Adjust endpoint if your backend uses a different route
+      await api.put("/api/doctor/profile", profileForm);
+
+      toast.success("Profile updated successfully");
+    } catch (err) {
+      console.error("Profile update error:", err);
+      const msg =
+        err?.response?.data?.message || "Failed to update profile. Try again.";
+      toast.error(msg);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const displayName =
     user?.name?.toLowerCase().startsWith("dr") ? user.name : `Dr. ${user?.name}`;
@@ -197,7 +221,9 @@ const DoctorDashboard = () => {
                 return (
                   <div key={appt._id} className="appointment-card">
                     <div>
-                      <div className="patient-name">Patient: {patient?.name}</div>
+                      <div className="patient-name">
+                        Patient: {patient?.name}
+                      </div>
 
                       <div className="info-item">
                         <b>Date:</b>{" "}
@@ -257,77 +283,107 @@ const DoctorDashboard = () => {
           <div className="profile-card">
             <h3>Edit Profile</h3>
 
-            <div className="profile-form">
-              <div className="form-row">
-                <label>Speciality</label>
-                <input
-                  type="text"
-                  value={profileForm.speciality}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, speciality: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="form-row">
-                <label>Degree</label>
-                <input
-                  type="text"
-                  value={profileForm.degree}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, degree: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="form-row inline">
-                <div>
-                  <label>Experience (Years)</label>
+            {loadingProfile ? (
+              <p className="empty-text">Loading profile…</p>
+            ) : (
+              <div className="profile-form">
+                <div className="form-row">
+                  <label>Speciality</label>
                   <input
-                    type="number"
-                    value={profileForm.experience}
+                    type="text"
+                    value={profileForm.speciality}
                     onChange={(e) =>
                       setProfileForm({
                         ...profileForm,
-                        experience: e.target.value,
+                        speciality: e.target.value,
                       })
                     }
                   />
                 </div>
 
-                <div>
-                  <label>Fees (₹)</label>
+                <div className="form-row">
+                  <label>Degree</label>
                   <input
-                    type="number"
-                    value={profileForm.fees}
+                    type="text"
+                    value={profileForm.degree}
                     onChange={(e) =>
-                      setProfileForm({ ...profileForm, fees: e.target.value })
+                      setProfileForm({
+                        ...profileForm,
+                        degree: e.target.value,
+                      })
                     }
                   />
                 </div>
-              </div>
 
-              <div className="form-row">
-                <label>About</label>
-                <textarea
-                  rows="4"
-                  value={profileForm.about}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, about: e.target.value })
-                  }
-                />
-              </div>
+                <div className="form-row inline">
+                  <div>
+                    <label>Experience (Years)</label>
+                    <input
+                      type="number"
+                      value={profileForm.experience}
+                      onChange={(e) =>
+                        setProfileForm({
+                          ...profileForm,
+                          experience: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
 
-              <button className="save-btn">Save Profile</button>
-            </div>
+                  <div>
+                    <label>Fees (₹)</label>
+                    <input
+                      type="number"
+                      value={profileForm.fees}
+                      onChange={(e) =>
+                        setProfileForm({
+                          ...profileForm,
+                          fees: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <label>About</label>
+                  <textarea
+                    rows="4"
+                    value={profileForm.about}
+                    onChange={(e) =>
+                      setProfileForm({
+                        ...profileForm,
+                        about: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <button
+                  className="save-btn"
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                >
+                  {savingProfile ? "Saving..." : "Save Profile"}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="profile-preview">
             <h3>Profile Preview</h3>
-            <p><b>Speciality:</b> {profileForm.speciality}</p>
-            <p><b>Degree:</b> {profileForm.degree}</p>
-            <p><b>Experience:</b> {profileForm.experience} years</p>
-            <p><b>Fees:</b> ₹{profileForm.fees}</p>
+            <p>
+              <b>Speciality:</b> {profileForm.speciality}
+            </p>
+            <p>
+              <b>Degree:</b> {profileForm.degree}
+            </p>
+            <p>
+              <b>Experience:</b> {profileForm.experience} years
+            </p>
+            <p>
+              <b>Fees:</b> ₹{profileForm.fees}
+            </p>
 
             <div className="preview-about">
               <h4>About:</h4>
