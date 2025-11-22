@@ -1,33 +1,32 @@
 import axios from "axios";
 
-// 🔥 Automatically choose correct base URL:
-// - Localhost during development
-// - "/api" when deployed on Render
+// Yaha baseURL sirf SAME ORIGIN rakha hai
+// Matlab:
+// - Local pe agar tum server se hi frontend serve karogi -> /api/... backend hit karega
+// - Render pe: https://prescripto-1-1xez.onrender.com + /api/...  == sahi backend
 const api = axios.create({
-  baseURL:
-    import.meta.env.MODE === "development"
-      ? "http://127.0.0.1:5000/api"  // local backend
-      : "/api",                      // Render backend
+  baseURL: "",      // ❗IMPORTANT: yaha kuch nahi, sirf khali string
   withCredentials: true,
 });
 
-// 🔐 Token Interceptor
+// Token Interceptor: reads token from the single source of truth (userInfo)
 api.interceptors.request.use(
   (config) => {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
       const token = userInfo?.token;
-
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (e) {
-      // ignore JSON errors
+      // ignore JSON parse errors
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 export default api;
