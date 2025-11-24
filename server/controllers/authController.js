@@ -11,6 +11,17 @@ const nodemailer = require("nodemailer");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 
+// ---------------------------------------------------------
+// 🔹 COMMON ENV HELPERS (support MAIL_* and EMAIL_* both)
+// ---------------------------------------------------------
+const MAIL_USER = process.env.MAIL_USER || process.env.EMAIL_USER;
+const MAIL_PASS = process.env.MAIL_PASS || process.env.EMAIL_PASS;
+const MAIL_FROM =
+  process.env.MAIL_FROM ||
+  process.env.EMAIL_FROM ||
+  MAIL_USER ||
+  "no-reply@prescripto.com";
+
 // Generate JWT
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
@@ -24,8 +35,8 @@ const generateToken = (id, role) => {
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
+    user: MAIL_USER,
+    pass: MAIL_PASS,
   },
 });
 
@@ -47,7 +58,7 @@ const sendWelcomeEmail = async (email, name, role) => {
         : "Patient";
 
     const mailOptions = {
-      from: process.env.MAIL_USER,
+      from: MAIL_FROM,
       to: email,
       subject: "Welcome to Prescripto 🎉",
       html: `
@@ -153,7 +164,7 @@ exports.sendOtp = async (req, res) => {
     const expiresInMinutes = parseInt(process.env.OTP_EXP_MINUTES || "10", 10);
     const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
-    // Upsert OTP record
+    // Upsert OTP record (supports unique email index)
     await Otp.findOneAndUpdate(
       { email },
       { code, expiresAt, verified: false },
@@ -161,7 +172,7 @@ exports.sendOtp = async (req, res) => {
     );
 
     const mailOptions = {
-      from: process.env.MAIL_USER,
+      from: MAIL_FROM,
       to: email,
       subject: "Your Prescripto Verification Code",
       html: `
@@ -331,7 +342,6 @@ exports.loginUser = async (req, res) => {
 
 /* ---------------------------------------------------------
    3️⃣ REGISTER DOCTOR  (REQUIRES VERIFIED OTP + DOCUMENTS)
-   Uses multer (req.files) + Cloudinary
 --------------------------------------------------------- */
 exports.registerDoctor = async (req, res) => {
   try {
@@ -471,7 +481,7 @@ exports.registerDoctor = async (req, res) => {
 };
 
 /* ---------------------------------------------------------
-   4️⃣ LOGIN DOCTOR  (FIXED VERSION)
+   4️⃣ LOGIN DOCTOR
 --------------------------------------------------------- */
 exports.loginDoctor = async (req, res) => {
   try {
@@ -573,7 +583,7 @@ exports.forgotPassword = async (req, res) => {
     const resetURL = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
     await transporter.sendMail({
-      from: process.env.MAIL_USER,
+      from: MAIL_FROM,
       to: user.email,
       subject: "Password Reset Request",
       html: `
