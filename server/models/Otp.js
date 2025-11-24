@@ -1,5 +1,5 @@
 // backend/models/Otp.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const otpSchema = new mongoose.Schema(
   {
@@ -7,7 +7,9 @@ const otpSchema = new mongoose.Schema(
       type: String,
       required: true,
       index: true,
-      unique: true,
+      unique: true,        // one OTP document per email
+      trim: true,
+      lowercase: true,
     },
     code: {
       type: String,
@@ -25,4 +27,7 @@ const otpSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Otp', otpSchema);
+// TTL index: document will be removed when `expiresAt` time is reached
+otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+module.exports = mongoose.model("Otp", otpSchema);
