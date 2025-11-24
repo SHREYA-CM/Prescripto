@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import React, { useState, useContext } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
@@ -11,7 +12,7 @@ const Login = () => {
   const location = useLocation();
   const { login } = useContext(AppContext);
 
-  // detect which login page
+  // --- Which login screen? ---
   const isAdminLogin = location.pathname === "/admin-login";
   const isDoctorLogin = location.pathname === "/doctor-login";
   const isPatientLogin = location.pathname === "/patient-login";
@@ -23,53 +24,83 @@ const Login = () => {
   const showRegisterLink = isPatientLogin;
 
   const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      let endpoint = "/api/auth/login"; // default: patient login
-      if (isDoctorLogin) endpoint = "/api/auth/doctor-login";
-      if (isAdminLogin) endpoint = "/api/auth/admin-login";
+      // --- choose backend endpoint ---
+      let endpoint = "/api/auth/login"; // default: patient
+      if (isDoctorLogin) {
+        endpoint = "/api/auth/doctor-login";
+      } else if (isAdminLogin) {
+        endpoint = "/api/auth/admin-login";
+      }
 
       const res = await api.post(endpoint, {
         email: formData.email,
         password: formData.password,
       });
 
-      // backend returns token + user fields; be defensive about shape
       const data = res.data || {};
 
-      // Build userInfo from response in a resilient way
+      // --- build userInfo object ---
+      const roleFromPath = isDoctorLogin
+        ? "doctor"
+        : isAdminLogin
+        ? "admin"
+        : "patient";
+
       const userInfo = {
-        _id: data._id || data.id || null,
+        _id: data._id || data.id || data.user?._id || null,
         name: data.name || data.user?.name || "",
         email: data.email || data.user?.email || formData.email,
-        role: data.role || "patient",
+        role: data.role || roleFromPath,
         token: data.token || data.accessToken || null,
+        // doctor-status (for approval flow) – backend should send this
+        status:
+          data.status ||
+          data.user?.status ||
+          data.doctor?.status ||
+          null,
       };
 
       if (!userInfo.token) {
         throw new Error("No token returned from server");
       }
 
-      // Save to localStorage (single source of truth)
+      // save + context
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
-
-      // Update context (so all components have the user + token)
       login(userInfo, userInfo.token);
 
       toast.success("Login successful!");
 
-      // redirects
-      if (userInfo.role === "admin") navigate("/admin");
-      else if (userInfo.role === "doctor") navigate("/doctor");
-      else navigate("/patient"); // keep your existing route structure
+      // --- redirect based on role ---
+      if (userInfo.role === "admin") {
+        navigate("/admin");
+        return;
+      }
 
+      if (userInfo.role === "doctor") {
+        // if backend sends status: 'pending' / 'approved' / 'rejected'
+        const status = userInfo.status || "approved"; // fallback so old data still works
+        if (status !== "approved") {
+          toast(
+            "Your doctor account is pending admin approval. You can't access dashboard yet.",
+            { icon: "⏳" }
+          );
+          navigate("/doctor-pending");
+          return;
+        }
+
+        navigate("/doctor");
+        return;
+      }
+
+      // default: patient
+      navigate("/patient");
     } catch (error) {
-      console.error("Login error:", error);
-      // Prefer backend message if available
       const message =
         error.response?.data?.message ||
         error.message ||
@@ -105,6 +136,10 @@ const Login = () => {
             onChange={handleChange}
             value={formData.password}
           />
+
+          <Link to="/forgot-password" className="forgot-link">
+            Forgot Password?
+          </Link>
         </div>
 
         <button type="submit">Login</button>

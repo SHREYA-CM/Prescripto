@@ -1,5 +1,6 @@
+// src/pages/DoctorDashboard.jsx
 import React, { useEffect, useState, useContext, useMemo } from "react";
-import api from "../../src/api/axios.js";
+import api from "../api/axios";
 import { AppContext } from "../context/AppContext.jsx";
 import toast, { Toaster } from "react-hot-toast";
 import "./DoctorDashboard.css";
@@ -23,9 +24,12 @@ const DoctorDashboard = () => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // ⭐ NEW: edit + saved state
+  // doctor status (pending / approved / rejected)
+  const [doctorStatus, setDoctorStatus] = useState(user?.status || "pending");
+
+  // form edit state + "profile already filled?" flag
   const [isEditing, setIsEditing] = useState(false);
-  const [justSaved, setJustSaved] = useState(true);
+  const [hasProfile, setHasProfile] = useState(false);
 
   /* -----------------------------------------------------------
      LOAD DOCTOR APPOINTMENTS (ONLY ONCE)
@@ -38,10 +42,15 @@ const DoctorDashboard = () => {
 
       if (Array.isArray(res.data)) {
         setAppointments(res.data);
+      } else if (Array.isArray(res.data?.appointments)) {
+        setAppointments(res.data.appointments);
+      } else {
+        setAppointments([]);
       }
     } catch (err) {
       console.error("Fetch doctor appointments error:", err);
       toast.error("Failed to load appointments.");
+      setAppointments([]);
     } finally {
       setLoadingAppt(false);
     }
@@ -51,11 +60,11 @@ const DoctorDashboard = () => {
     loadAppointments();
   }, []);
 
-  const getPatient = (appt) => appt.user || {};
+  const getPatient = (appt) => appt.user || appt.patient || {};
   const getStatus = (appt) => appt.status || "Pending";
 
   /* -----------------------------------------------------------
-     ACCEPT APPOINTMENT
+     ACCEPT / DECLINE APPOINTMENT
   -------------------------------------------------------------*/
   const handleAccept = async (id) => {
     try {
@@ -67,13 +76,10 @@ const DoctorDashboard = () => {
       loadAppointments();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to accept");
+      toast.error("Failed to accept appointment.");
     }
   };
 
-  /* -----------------------------------------------------------
-     DECLINE APPOINTMENT
-  -------------------------------------------------------------*/
   const handleDecline = async (id) => {
     try {
       await api.patch(`/api/appointments/${id}/status`, {
@@ -84,7 +90,7 @@ const DoctorDashboard = () => {
       loadAppointments();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to decline");
+      toast.error("Failed to decline appointment.");
     }
   };
 
@@ -96,7 +102,9 @@ const DoctorDashboard = () => {
     let list = [...appointments];
 
     list.sort(
-      (a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate)
+      (a, b) =>
+        new Date(a.appointmentDate).getTime() -
+        new Date(b.appointmentDate).getTime()
     );
 
     if (filter === "today") {
@@ -111,6 +119,20 @@ const DoctorDashboard = () => {
   }, [appointments, filter]);
 
   /* -----------------------------------------------------------
+     Helper: check if profile actually filled
+  -------------------------------------------------------------*/
+  const computeHasProfile = (doc) => {
+    if (!doc) return false;
+    return Boolean(
+      doc.speciality ||
+        doc.degree ||
+        (typeof doc.experience === "number" && doc.experience > 0) ||
+        (typeof doc.fees === "number" && doc.fees > 0) ||
+        doc.about
+    );
+  };
+
+  /* -----------------------------------------------------------
      LOAD DOCTOR PROFILE (ONLY ONCE)
   -------------------------------------------------------------*/
   useEffect(() => {
@@ -121,19 +143,35 @@ const DoctorDashboard = () => {
         const res = await api.get("/api/doctor/profile");
         const doc = res.data?.doctor;
 
-        setProfileForm({
-          speciality: doc?.speciality || "",
-          degree: doc?.degree || "",
-          experience: doc?.experience || "",
-          fees: doc?.fees || "",
-          about: doc?.about || "",
-        });
+        if (doc) {
+          setProfileForm({
+            speciality: doc.speciality || "",
+            degree: doc.degree || "",
+            experience: doc.experience ?? "",
+            fees: doc.fees ?? "",
+            about: doc.about || "",
+          });
 
-        setIsEditing(false);
-        setJustSaved(true);
+          if (doc.status) setDoctorStatus(doc.status);
+          const filled = computeHasProfile(doc);
+          setHasProfile(filled);
+          setIsEditing(!filled); // if first time, go to editing mode
+        } else {
+          // no profile -> blank + editing mode
+          setProfileForm({
+            speciality: "",
+            degree: "",
+            experience: "",
+            fees: "",
+            about: "",
+          });
+          setHasProfile(false);
+          setIsEditing(true);
+        }
       } catch (err) {
         console.error("Profile load error:", err);
-        toast.error("Failed to load profile");
+        toast.error("Failed to load profile.");
+        setIsEditing(true);
       } finally {
         setLoadingProfile(false);
       }
@@ -149,24 +187,64 @@ const DoctorDashboard = () => {
     try {
       setSavingProfile(true);
 
-      // TODO: change endpoint if your backend is different
-      await api.put("/api/doctor/profile", profileForm);
+      const payload = {
+        speciality: profileForm.speciality,
+        degree: profileForm.degree,
+        experience: profileForm.experience
+          ? Number(profileForm.experience)
+          : 0,
+        fees: profileForm.fees ? Number(profileForm.fees) : 0,
+        about: profileForm.about,
+      };
 
-      toast.success("Profile updated successfully");
-      setIsEditing(false);
-      setJustSaved(true);
+      const res = await api.put("/api/doctor/profile", payload);
+
+      const updatedDoc = res.data?.doctor;
+      if (updatedDoc) {
+        setProfileForm({
+          speciality: updatedDoc.speciality || "",
+          degree: updatedDoc.degree || "",
+          experience: updatedDoc.experience ?? "",
+          fees: updatedDoc.fees ?? "",
+          about: updatedDoc.about || "",
+        });
+        const filled = computeHasProfile(updatedDoc);
+        setHasProfile(filled);
+        setIsEditing(false); // after save, read-only mode
+      } else {
+        setHasProfile(computeHasProfile(payload));
+        setIsEditing(false);
+      }
+
+      toast.success("Profile updated successfully!");
     } catch (err) {
       console.error("Profile update error:", err);
-      const msg =
-        err?.response?.data?.message || "Failed to update profile. Try again.";
-      toast.error(msg);
+      toast.error(
+        err.response?.data?.message || "Failed to update profile. Try again."
+      );
     } finally {
       setSavingProfile(false);
     }
   };
 
+  const handleCancelEdit = () => {
+    // simplest: reload to revert unsaved changes
+    window.location.reload();
+  };
+
   const displayName =
-    user?.name?.toLowerCase().startsWith("dr") ? user.name : `Dr. ${user?.name}`;
+    user?.name?.toLowerCase().startsWith("dr")
+      ? user.name
+      : `Dr. ${user?.name || ""}`;
+
+  const doctorEmail = user?.email || "";
+
+  const statusLabel =
+    doctorStatus === "approved"
+      ? "Approved"
+      : doctorStatus === "rejected"
+      ? "Rejected"
+      : "Pending approval";
 
   return (
     <div className="doctor-dashboard">
@@ -174,12 +252,34 @@ const DoctorDashboard = () => {
 
       <div className="doctor-header">
         <h2>Welcome, {displayName}</h2>
-        <p>Here are your appointments and profile settings.</p>
+        <p>Manage your appointments and update your profile details here.</p>
+
+        <p className="doctor-status-line">
+          <b>Status:</b>{" "}
+          <span
+            className={`status-pill ${
+              doctorStatus === "approved"
+                ? "status-approved"
+                : doctorStatus === "rejected"
+                ? "status-rejected"
+                : "status-pending"
+            }`}
+          >
+            {statusLabel}
+          </span>
+          {doctorStatus !== "approved" && (
+            <span className="status-note">
+              (Admin approval is required before you can start seeing patients.)
+            </span>
+          )}
+        </p>
       </div>
 
       <div className="doctor-tabs">
         <button
-          className={`tab-btn ${activeTab === "appointments" ? "active" : ""}`}
+          className={`tab-btn ${
+            activeTab === "appointments" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("appointments")}
         >
           Appointments
@@ -193,6 +293,7 @@ const DoctorDashboard = () => {
         </button>
       </div>
 
+      {/* ------------------ APPOINTMENTS TAB ------------------ */}
       {activeTab === "appointments" && (
         <>
           <div className="doctor-filters">
@@ -231,16 +332,23 @@ const DoctorDashboard = () => {
                   <div key={appt._id} className="appointment-card">
                     <div>
                       <div className="patient-name">
-                        Patient: {patient?.name}
+                        Patient: {patient?.name || "Unknown"}
                       </div>
+                      {patient?.email && (
+                        <div className="patient-email">{patient.email}</div>
+                      )}
 
                       <div className="info-item">
                         <b>Date:</b>{" "}
-                        {new Date(appt.appointmentDate).toLocaleDateString()}
+                        {appt.appointmentDate
+                          ? new Date(
+                              appt.appointmentDate
+                            ).toLocaleDateString()
+                          : "-"}
                       </div>
 
                       <div className="info-item">
-                        <b>Time:</b> {appt.appointmentTime}
+                        <b>Time:</b> {appt.appointmentTime || "-"}
                       </div>
 
                       <div className="info-item">
@@ -287,6 +395,7 @@ const DoctorDashboard = () => {
         </>
       )}
 
+      {/* ------------------ PROFILE TAB ------------------ */}
       {activeTab === "profile" && (
         <div className="profile-section">
           <div className="profile-card">
@@ -308,6 +417,7 @@ const DoctorDashboard = () => {
                         speciality: e.target.value,
                       })
                     }
+                    placeholder="e.g. Cardiologist, Dermatologist"
                   />
                 </div>
 
@@ -323,6 +433,7 @@ const DoctorDashboard = () => {
                         degree: e.target.value,
                       })
                     }
+                    placeholder="e.g. MBBS, MD"
                   />
                 </div>
 
@@ -331,6 +442,7 @@ const DoctorDashboard = () => {
                     <label>Experience (Years)</label>
                     <input
                       type="number"
+                      min="0"
                       value={profileForm.experience}
                       disabled={!isEditing}
                       onChange={(e) =>
@@ -346,6 +458,7 @@ const DoctorDashboard = () => {
                     <label>Fees (₹)</label>
                     <input
                       type="number"
+                      min="0"
                       value={profileForm.fees}
                       disabled={!isEditing}
                       onChange={(e) =>
@@ -370,49 +483,50 @@ const DoctorDashboard = () => {
                         about: e.target.value,
                       })
                     }
+                    placeholder="Short bio, clinic info, treatment approach, etc."
                   />
                 </div>
 
-                {/* ⭐ BUTTONS AREA */}
-                <div className="form-actions">
+                <div className="profile-actions">
                   {isEditing ? (
                     <>
                       <button
+                        type="button"
                         className="save-btn"
                         onClick={handleSaveProfile}
                         disabled={savingProfile}
-                        type="button"
                       >
                         {savingProfile ? "Saving..." : "Save Profile"}
                       </button>
-
-                      <button
-                        type="button"
-                        className="cancel-btn"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setJustSaved(false);
-                        }}
-                      >
-                        Cancel
-                      </button>
+                      {hasProfile && (
+                        <button
+                          type="button"
+                          className="secondary-btn"
+                          onClick={handleCancelEdit}
+                          disabled={savingProfile}
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </>
                   ) : (
                     <>
                       <button
                         type="button"
-                        className="edit-btn"
-                        onClick={() => {
-                          setIsEditing(true);
-                          setJustSaved(false);
-                        }}
+                        className="save-btn"
+                        onClick={() => setIsEditing(true)}
                       >
                         Edit Profile
                       </button>
-
-                      <button type="button" className="saved-pill" disabled>
-                        {justSaved ? "Saved" : "View Only"}
-                      </button>
+                      {hasProfile && (
+                        <button
+                          type="button"
+                          className="saved-btn"
+                          disabled={true}
+                        >
+                          ✓ Saved
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -422,22 +536,40 @@ const DoctorDashboard = () => {
 
           <div className="profile-preview">
             <h3>Profile Preview</h3>
-            <p>
-              <b>Speciality:</b> {profileForm.speciality}
-            </p>
-            <p>
-              <b>Degree:</b> {profileForm.degree}
-            </p>
-            <p>
-              <b>Experience:</b> {profileForm.experience} years
-            </p>
-            <p>
-              <b>Fees:</b> ₹{profileForm.fees}
-            </p>
+            <div className="preview-info">
+              <p>
+                <b>Name:</b> {displayName}
+              </p>
+              {doctorEmail && (
+                <p>
+                  <b>Email:</b> {doctorEmail}
+                </p>
+              )}
+              <p>
+                <b>Speciality:</b>{" "}
+                {profileForm.speciality || "Not specified"}
+              </p>
+              <p>
+                <b>Degree:</b> {profileForm.degree || "Not specified"}
+              </p>
+              <p>
+                <b>Experience:</b>{" "}
+                {profileForm.experience
+                  ? `${profileForm.experience} years`
+                  : "Not specified"}
+              </p>
+              <p>
+                <b>Fees:</b>{" "}
+                {profileForm.fees ? `₹${profileForm.fees}` : "Not specified"}
+              </p>
+            </div>
 
             <div className="preview-about">
-              <h4>About:</h4>
-              <p>{profileForm.about}</p>
+              <h4>About</h4>
+              <p>
+                {profileForm.about ||
+                  "This is where your introduction, clinic information and treatment style will appear."}
+              </p>
             </div>
           </div>
         </div>

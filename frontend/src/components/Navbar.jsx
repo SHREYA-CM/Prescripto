@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import React, { useContext, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
@@ -18,7 +19,6 @@ const Navbar = () => {
 
   return (
     <>
-      {/* INTERNAL CSS */}
       <style>{`
         .navbar {
           width: 100%;
@@ -32,22 +32,18 @@ const Navbar = () => {
           top: 0;
           z-index: 1000;
         }
-
         .nav-logo {
           height: 40px;
         }
-
         .nav-links {
           display: flex;
           gap: 1.5rem;
         }
-
         .nav-links a {
           font-weight: bold;
           color: #333;
           text-decoration: none;
         }
-
         .login-btn {
           padding: 8px 15px;
           background: #007BFF;
@@ -57,7 +53,6 @@ const Navbar = () => {
           font-weight: bold;
           cursor: pointer;
         }
-
         .dropdown-menu {
           position: absolute;
           top: 110%;
@@ -67,20 +62,17 @@ const Navbar = () => {
           border-radius: 6px;
           overflow: hidden;
         }
-
         .dropdown-menu a {
           display: block;
           padding: 10px;
           text-decoration: none;
           color: #333;
         }
-
         .user-area {
           display: flex;
           align-items: center;
           gap: 10px;
         }
-
         .logout-btn {
           padding: 8px 14px;
           background: #d9534f;
@@ -89,28 +81,23 @@ const Navbar = () => {
           border-radius: 5px;
           cursor: pointer;
         }
-
         .hamburger {
           display: none;
           font-size: 26px;
           cursor: pointer;
         }
-
         .mobile-menu {
           display: none;
         }
-
         @media (max-width: 768px) {
           .nav-links,
           .user-area,
           .login-area {
             display: none;
           }
-
           .hamburger {
             display: block;
           }
-
           .mobile-menu {
             display: flex;
             flex-direction: column;
@@ -120,7 +107,6 @@ const Navbar = () => {
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             animation: slideDown 0.3s ease;
           }
-
           .mobile-menu a {
             padding: 10px 0;
             border-bottom: 1px solid #ddd;
@@ -128,7 +114,6 @@ const Navbar = () => {
             text-decoration: none;
             color: #333;
           }
-
           .mobile-logout {
             margin-top: 10px;
             background: #d9534f;
@@ -138,37 +123,40 @@ const Navbar = () => {
             border-radius: 5px;
           }
         }
-
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
-      {/* NAVBAR UI */}
       <div className="navbar">
-
-        {/* Logo */}
         <NavLink to="/">
           <img src={assets.logo} alt="Prescripto" className="nav-logo" />
         </NavLink>
 
-        {/* Desktop Navigation */}
         <nav className="nav-links">
           <NavLink to="/">Home</NavLink>
           <NavLink to="/doctors">All Doctors</NavLink>
           <NavLink to="/about">About Us</NavLink>
           <NavLink to="/contact">Contact</NavLink>
 
-          {user?.role === "patient" && <NavLink to="/my-appointments">My Appointments</NavLink>}
-          {user?.role === "doctor" && <NavLink to="/doctor">Doctor Dashboard</NavLink>}
-          {user?.role === "admin" && <NavLink to="/admin">Admin Dashboard</NavLink>}
+          {user?.role === "patient" && (
+            <NavLink to="/my-appointments">My Appointments</NavLink>
+          )}
+          {user?.role === "doctor" && (
+            <NavLink to="/doctor">Doctor Dashboard</NavLink>
+          )}
+          {user?.role === "admin" && (
+            <NavLink to="/admin">Admin Dashboard</NavLink>
+          )}
         </nav>
 
-        {/* Login or User Panel */}
         {!user ? (
           <div className="login-area" style={{ position: "relative" }}>
-            <button className="login-btn" onClick={() => setOpenMenu(!openMenu)}>
+            <button
+              className="login-btn"
+              onClick={() => setOpenMenu(!openMenu)}
+            >
               Login ▼
             </button>
 
@@ -186,32 +174,49 @@ const Navbar = () => {
         ) : (
           <div className="user-area">
             <span>Welcome, {firstName}!</span>
-            <button className="logout-btn" onClick={handleLogout}>Logout</button>
+            <button className="logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
           </div>
         )}
 
-        {/* Hamburger Icon (Mobile) */}
         <div className="hamburger" onClick={() => setMobileNav(!mobileNav)}>
           ☰
         </div>
       </div>
 
-      {/* Mobile Slide Menu */}
       {mobileNav && (
         <div className="mobile-menu">
-          <NavLink onClick={() => setMobileNav(false)} to="/">Home</NavLink>
-          <NavLink onClick={() => setMobileNav(false)} to="/doctors">All Doctors</NavLink>
-          <NavLink onClick={() => setMobileNav(false)} to="/about">About Us</NavLink>
-          <NavLink onClick={() => setMobileNav(false)} to="/contact">Contact</NavLink>
+          <NavLink onClick={() => setMobileNav(false)} to="/">
+            Home
+          </NavLink>
+          <NavLink onClick={() => setMobileNav(false)} to="/doctors">
+            All Doctors
+          </NavLink>
+          <NavLink onClick={() => setMobileNav(false)} to="/about">
+            About Us
+          </NavLink>
+          <NavLink onClick={() => setMobileNav(false)} to="/contact">
+            Contact
+          </NavLink>
 
           {user?.role === "patient" && (
-            <NavLink onClick={() => setMobileNav(false)} to="/my-appointments">My Appointments</NavLink>
+            <NavLink
+              onClick={() => setMobileNav(false)}
+              to="/my-appointments"
+            >
+              My Appointments
+            </NavLink>
           )}
           {user?.role === "doctor" && (
-            <NavLink onClick={() => setMobileNav(false)} to="/doctor">Doctor Dashboard</NavLink>
+            <NavLink onClick={() => setMobileNav(false)} to="/doctor">
+              Doctor Dashboard
+            </NavLink>
           )}
           {user?.role === "admin" && (
-            <NavLink onClick={() => setMobileNav(false)} to="/admin">Admin Dashboard</NavLink>
+            <NavLink onClick={() => setMobileNav(false)} to="/admin">
+              Admin Dashboard
+            </NavLink>
           )}
 
           {!user ? (
@@ -222,7 +227,9 @@ const Navbar = () => {
               <NavLink to="/register">Register</NavLink>
             </>
           ) : (
-            <button className="mobile-logout" onClick={handleLogout}>Logout</button>
+            <button className="mobile-logout" onClick={handleLogout}>
+              Logout
+            </button>
           )}
         </div>
       )}

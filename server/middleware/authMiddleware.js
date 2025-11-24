@@ -21,13 +21,22 @@ exports.protect = async (req, res, next) => {
       console.log("\n----------------------------------");
       console.log("TOKEN DECODED:", decoded);
 
+      // decoded has: { id, role, iat, exp }
+      const role =
+        typeof decoded.role === "string"
+          ? decoded.role.trim().toLowerCase()
+          : decoded.role;
+
+      // ✅ expose BOTH id and _id to be safe
       req.user = {
         _id: decoded.id,
-        role: decoded.role.trim().toLowerCase(),
+        id: decoded.id,
+        role,
       };
 
       return next();
     } catch (error) {
+      console.error("protect middleware error:", error);
       return res.status(401).json({ message: "Invalid or expired token" });
     }
   }
@@ -40,9 +49,9 @@ exports.protect = async (req, res, next) => {
 // -----------------------------------------------------
 exports.authorize = (...roles) => {
   return async (req, res, next) => {
-    console.log("ROLE:", req.user.role);
+    console.log("ROLE:", req.user?.role);
 
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -51,13 +60,17 @@ exports.authorize = (...roles) => {
     }
 
     if (req.user.role === "doctor") {
-      req.account = await Doctor.findOne({ userId: req.user._id }).select("-password");
+      req.account = await Doctor.findOne({ userId: req.user._id }).select(
+        "-password"
+      );
     }
 
     console.log("ACCOUNT:", req.account);
 
     if (!req.account) {
-      return res.status(403).json({ message: "User/Doctor account not found" });
+      return res
+        .status(403)
+        .json({ message: "User/Doctor account not found" });
     }
 
     return next();

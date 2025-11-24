@@ -1,99 +1,43 @@
-const express = require('express');
+// routes/doctorRoutes.js
+
+const express = require("express");
 const router = express.Router();
 
-const Doctor = require('../models/doctor');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect } = require("../middleware/authMiddleware");
 
+const {
+  getAllDoctors,
+  getDoctorBySpeciality,
+  getDoctorById,
+  getDoctorProfile,
+  updateDoctorProfile,
+} = require("../controllers/doctorController");
 
-// ----------------------------------------------------
-// 1) GET DOCTOR PROFILE
-// ----------------------------------------------------
-router.get(
-  '/doctor/profile',
-  protect,
-  authorize('doctor'),
-  async (req, res) => {
-    try {
-      // Find doctor using the user ID inside the token
-      const doctor = await Doctor.findOne({ user: req.user.id });
+/* 1) PUBLIC: GET ALL DOCTORS
+   GET /api/doctors
+*/
+router.get("/doctors", getAllDoctors);
 
-      if (!doctor) {
-        return res.status(404).json({ message: "Doctor profile not found" });
-      }
+/* 2) PUBLIC: GET DOCTORS BY SPECIALITY
+   GET /api/doctors/speciality/:spec
+*/
+router.get("/doctors/speciality/:spec", getDoctorBySpeciality);
 
-      res.json({ doctor });
-    } catch (err) {
-      console.error("GET /doctor/profile error:", err.message);
-      res.status(500).json({ message: "Failed to load doctor profile" });
-    }
-  }
-);
+/* 3) DOCTOR: GET OWN PROFILE (protected)
+   GET /api/doctor/profile
+   🔥 MUST be BEFORE /doctor/:id
+*/
+router.get("/doctor/profile", protect, getDoctorProfile);
 
+/* 4) DOCTOR: UPDATE OWN PROFILE (protected)
+   PUT /api/doctor/profile
+*/
+router.put("/doctor/profile", protect, updateDoctorProfile);
 
-// ----------------------------------------------------
-// 2) UPDATE DOCTOR PROFILE
-// ----------------------------------------------------
-router.put(
-  '/doctor/profile',
-  protect,
-  authorize('doctor'),
-  async (req, res) => {
-    try {
-      const updates = req.body;
-
-      const doctor = await Doctor.findOneAndUpdate(
-        { user: req.user.id },
-        updates,
-        { new: true }
-      );
-
-      if (!doctor) {
-        return res.status(404).json({ message: "Doctor not found" });
-      }
-
-      res.json({
-        message: "Doctor profile updated successfully",
-        doctor,
-      });
-    } catch (err) {
-      console.error("PUT /doctor/profile error:", err.message);
-      res.status(500).json({ message: "Failed to update profile" });
-    }
-  }
-);
-
-
-// ----------------------------------------------------
-// 3) PUBLIC: ALL DOCTORS
-// ----------------------------------------------------
-router.get('/doctors', async (req, res) => {
-  try {
-    const doctors = await Doctor.find({});
-    res.json(doctors);
-  } catch (err) {
-    console.error("GET /doctors error:", err.message);
-    res.status(500).json({ message: "Failed to fetch doctors" });
-  }
-});
-
-
-// ----------------------------------------------------
-// 4) PUBLIC: SINGLE DOCTOR
-// ----------------------------------------------------
-router.get('/doctor/:id', async (req, res) => {
-  try {
-    const doctor = await Doctor.findById(req.params.id);
-
-    if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
-    }
-
-    res.json({ doctor });
-  } catch (err) {
-    console.error("GET /doctor/:id error:", err.message);
-    res.status(500).json({ message: "Failed to fetch doctor" });
-  }
-});
-
+/* 5) PUBLIC: GET SINGLE DOCTOR BY ID
+   GET /api/doctor/:id
+   (keep this LAST so it doesn't catch "/doctor/profile")
+*/
+router.get("/doctor/:id", getDoctorById);
 
 module.exports = router;

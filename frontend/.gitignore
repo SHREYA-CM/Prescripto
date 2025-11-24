@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend / Frontend env files
+server/.env
+frontend/.env
+
+# (optional explicit)
+server/node_modules/
+frontend/node_modules/

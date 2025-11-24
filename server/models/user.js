@@ -10,34 +10,36 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true, // Har user ka email unique hoga
+      unique: true,
     },
     password: {
       type: String,
       required: true,
     },
+
     role: {
       type: String,
-      enum: ['patient', 'doctor', 'admin'], // Ab 3 roles: patient, doctor, admin
-      default: 'patient', // Naya user by default patient hoga
+      enum: ['patient', 'doctor', 'admin'],
+      default: 'patient',
     },
+
+    // 🔥 NEW FOR FORGOT PASSWORD
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
   },
-  { timestamps: true } // Automatically 'createdAt' aur 'updatedAt' fields add karega
+  { timestamps: true }
 );
 
-// Password hash karne ka code
+// Hash password
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next(); // Agar password modify nahi hua, toh skip karo
-  }
+  if (!this.isModified('password')) return next();
 
-  // Password hash karo
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Password compare karne ka method
+// Compare password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

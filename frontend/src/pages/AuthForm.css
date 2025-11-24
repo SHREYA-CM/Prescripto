@@ -1,4 +1,6 @@
-/* Basic body styles to center the form */
+/* ===============================
+   GLOBAL / BODY STYLES
+================================ */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f0f2f5;
@@ -6,93 +8,261 @@ body {
     padding: 0;
 }
 
-/* Main container that centers the form */
+/* ===============================
+   MAIN AUTH LAYOUT
+================================ */
 .auth-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 1rem;
+    box-sizing: border-box;
 }
 
-/* The form card itself */
+/* FORM CARD */
 .auth-form {
     background: #ffffff;
     padding: 2.5rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     box-sizing: border-box;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .auth-form h2 {
     margin-top: 0;
     margin-bottom: 1.5rem;
     text-align: center;
-    color: #333;
-    font-weight: 600;
+    color: #111827;
+    font-weight: 700;
 }
 
-/* Styles for form groups (label + input) */
+/* ===============================
+   FORM FIELDS
+================================ */
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 1.1rem;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
-    color: #555;
+    margin-bottom: 0.45rem;
+    color: #374151;
     font-weight: 500;
+    font-size: 0.95rem;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
     box-sizing: border-box;
-    font-size: 1rem;
-    transition: border-color 0.2s;
+    background: #f9fafb;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    background: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
-/* Submit button styles */
-button[type="submit"] {
-    width: 100%;
-    padding: 0.8rem;
+/* ===============================
+   OTP SECTION
+================================ */
+.auth-info-text {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.otp-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.otp-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+.otp-input-row input {
+    flex: 1;
+    padding: 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
+
+/* ===============================
+   BUTTONS
+================================ */
+
+/* universal button base */
+.auth-form button {
+    padding: 0.65rem;
+    border-radius: 6px;
     border: none;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: white;
-    font-size: 1rem;
-    font-weight: bold;
+    font-size: 0.95rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-form button:active {
+    transform: scale(0.97);
+}
+
+/* submit button */
+.auth-form button[type="submit"] {
+    width: 100%;
+    padding: 0.85rem;
+    background-color: #2563eb;
+    color: white;
     margin-top: 1rem;
+    border-radius: 8px;
 }
 
-button[type="submit"]:hover {
-    background-color: #0056b3;
+.auth-form button[type="submit"]:hover:not(:disabled) {
+    background-color: #1e3fae;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
 }
 
-/* Link at the bottom */
-.form-footer {
+.auth-form button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* OTP / Verify button styles */
+.auth-btn-primary {
+    background-color: #2563eb;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+    background-color: #1d4ed8;
+}
+
+.auth-btn-success {
+    background-color: #16a34a;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+}
+
+.auth-btn-success:hover:not(:disabled) {
+    background-color: #15803d;
+}
+
+/* green stays bright even disabled */
+.auth-btn-success:disabled {
+    opacity: 1;
+    cursor: default;
+}
+
+/* ===============================
+   DOCTOR DOCUMENT UPLOAD FIELDS
+================================ */
+
+.doc-upload-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    border: 1px dashed #d1d5db;
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.file-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.file-field span {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #4b5563;
+}
+
+.file-field input[type="file"] {
+    padding: 0.45rem;
+    background: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+}
+
+/* ===============================
+   EXTRA LINKS
+================================ */
+
+.forgot-link {
+    display: inline-block;
+    margin-top: 0.3rem;
+    font-size: 0.85rem;
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+.auth-form p {
+    margin-top: 1.3rem;
+    font-size: 0.88rem;
     text-align: center;
-    margin-top: 1.5rem;
-    color: #666;
+    color: #4b5563;
 }
 
-.form-footer a {
-    color: #007bff;
+.auth-form a {
+    color: #2563eb;
     text-decoration: none;
     font-weight: 500;
 }
 
-.form-footer a:hover {
+.auth-form a:hover {
     text-decoration: underline;
+}
+
+/* ===============================
+   RESPONSIVE
+================================ */
+@media (max-width: 480px) {
+    .auth-form {
+        padding: 1.8rem;
+    }
+
+    .otp-row,
+    .otp-input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .auth-form button.auth-btn-primary,
+    .auth-form button.auth-btn-success {
+        width: 100%;
+    }
 }

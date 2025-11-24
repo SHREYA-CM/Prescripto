@@ -1,11 +1,11 @@
+// src/api/axios.js
 import axios from "axios";
 
-// Yaha baseURL sirf SAME ORIGIN rakha hai
-// Matlab:
-// - Local pe agar tum server se hi frontend serve karogi -> /api/... backend hit karega
-// - Render pe: https://prescripto-1-1xez.onrender.com + /api/...  == sahi backend
+// Same-origin baseURL so it works both locally and on Render
+// - Locally: if frontend and backend are served from same origin, /api/... hits backend
+// - Render: https://prescripto-1-1xez.onrender.com + /api/... => correct backend
 const api = axios.create({
-  baseURL: "",      // ❗IMPORTANT: yaha kuch nahi, sirf khali string
+  baseURL: "", // IMPORTANT: keep this empty for same-origin
   withCredentials: true,
 });
 

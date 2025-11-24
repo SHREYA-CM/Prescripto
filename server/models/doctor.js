@@ -9,6 +9,7 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
+    // BASIC DETAILS
     name: {
       type: String,
       required: true,
@@ -25,6 +26,7 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
+    // DOCTOR DETAILS
     speciality: {
       type: String,
       default: "general physician",
@@ -50,6 +52,7 @@ const doctorSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ADDRESS
     address: {
       line1: {
         type: String,
@@ -61,11 +64,37 @@ const doctorSchema = new mongoose.Schema(
       },
     },
 
+    // MAIN PROFILE IMAGE
     image: {
       type: String,
-      default: "https://placehold.co/150x150/E2E8F0/4A5568?text=Doctor",
+      default:
+        "https://placehold.co/150x150/E2E8F0/4A5568?text=Doctor",
     },
 
+    // 🌟 NEW: DOCUMENT UPLOADS FOR VERIFICATION
+    photoUrl: {
+      type: String, // Doctor passport photo
+      default: "",
+    },
+
+    idProofUrl: {
+      type: String, // Aadhaar, PAN, etc.
+      default: "",
+    },
+
+    degreeUrl: {
+      type: String, // MBBS/MS/MD degree certificate
+      default: "",
+    },
+
+    // 🌟 NEW: ADMIN APPROVAL STATUS
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+
+    // AVAILABILITY
     isAvailable: {
       type: Boolean,
       default: true,
