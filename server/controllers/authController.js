@@ -14,7 +14,7 @@ const fs = require("fs");
 // const nodemailer = require("nodemailer");
 
 // ✅ ADD RESEND MAILER
-const { sendMail } = require(".utils/mailer");
+const { sendMail } = require("..utils/mailer");
 
 // Generate JWT token
 const generateToken = (id, role) => {
