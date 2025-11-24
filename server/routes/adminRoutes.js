@@ -10,7 +10,7 @@ const Doctor = require("../models/doctor");
 const Appointment = require("../models/Appointment");
 
 // ✅ Replace nodemailer with Resend mailer
-const { sendMail } = require("../utils/mailer");
+const { sendMail } = require("..utils/mailer");
 
 // Middleware: Admin only
 const adminOnly = [protect, authorize("admin")];
