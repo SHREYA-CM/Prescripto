@@ -1,13 +1,18 @@
 // backend/utils/mailer.js
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
-// Your API Key
-const resend = new Resend("rnd_ChrjTEvfSoLAbnZEvld9fBMoHPmr");
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS, // App password
+  },
+});
 
 async function sendMail({ to, subject, text, html }) {
   try {
-    const response = await resend.emails.send({
-      from: "Prescripto <noreply@resend.dev>",
+    const response = await transporter.sendMail({
+      from: `"Prescripto" <${process.env.MAIL_USER}>`,
       to,
       subject,
       html: html || `<p>${text}</p>`,

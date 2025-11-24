@@ -7,27 +7,35 @@ const Otp = require("../models/Otp");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 
-// ⛔ REMOVE nodemailer imports completely
-// const nodemailer = require("nodemailer");
-
-// ✅ ADD RESEND MAILER
-const { sendMail } = require("..utils/mailer");
-
-// Generate JWT token
+// Generate JWT
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 };
 
-// Gmail regex
+/* ---------------------------------------------------------
+   🔹 COMMON EMAIL TRANSPORTER  (Gmail SMTP)
+--------------------------------------------------------- */
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
+
+/* ---------------------------------------------------------
+   🔹 GMAIL REGEX (Only allow @gmail.com here)
+--------------------------------------------------------- */
 const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 
 /* ---------------------------------------------------------
-   🔹 SEND WELCOME EMAIL USING RESEND
+   🔹 HELPER: SEND WELCOME EMAIL ON REGISTRATION
 --------------------------------------------------------- */
 const sendWelcomeEmail = async (email, name, role) => {
   try {
@@ -38,30 +46,41 @@ const sendWelcomeEmail = async (email, name, role) => {
         ? "Admin"
         : "Patient";
 
-    await sendMail({
+    const mailOptions = {
+      from: process.env.MAIL_USER,
       to: email,
       subject: "Welcome to Prescripto 🎉",
       html: `
         <h2>Welcome, ${name}!</h2>
-        <p>Your <b>${roleLabel}</b> account has been created successfully.</p>
+        <p>Your <b>${roleLabel}</b> account has been created successfully on <b>Prescripto</b>.</p>
+        <p>You can now login using your registered email and password.</p>
+        <br/>
+        <p style="font-size:13px;color:#555">
+          If you did not create this account, please ignore this email.
+        </p>
       `,
-    });
+    };
 
+    await transporter.sendMail(mailOptions);
     console.log(`✅ Welcome email sent to ${email}`);
   } catch (err) {
     console.error("❌ Error sending welcome email:", err.message);
+    // Registration should still succeed even if email fails
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 GENERATE OTP
+   🔹 GENERATE 6-DIGIT OTP
 --------------------------------------------------------- */
 const generateOtpCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 /* ---------------------------------------------------------
-   🔹 VERIFY EMAIL (REAL TIME)
+   🔹 0️⃣ VERIFY EMAIL (REAL-TIME CHECK)
+   POST /api/auth/verify-email
+   ✅ Works for both Patient + Doctor
+   ✅ Only format + DB uniqueness (no SMTP existence check)
 --------------------------------------------------------- */
 exports.verifyEmail = async (req, res) => {
   try {
@@ -74,6 +93,7 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
+    // Only allow Gmail
     if (!gmailRegex.test(email)) {
       return res.status(200).json({
         exists: false,
@@ -81,16 +101,18 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
+    // Check if email already registered in User OR Doctor
     const userExists = await User.findOne({ email });
     const doctorExists = await Doctor.findOne({ email });
 
     if (userExists || doctorExists) {
       return res.status(200).json({
         exists: false,
-        message: "This email is already registered.",
+        message: "This email is already registered. Please login instead.",
       });
     }
 
+    // ✅ Valid Gmail + not in DB -> allow OTP step
     return res.status(200).json({
       exists: true,
       message: "Email is valid and available.",
@@ -105,7 +127,9 @@ exports.verifyEmail = async (req, res) => {
 };
 
 /* ---------------------------------------------------------
-   🔹 SEND OTP (NOW USING RESEND)
+   🔹 0️⃣ SEND OTP
+   POST /api/auth/send-otp
+   ✅ Works for any valid Gmail (patient / doctor / admin)
 --------------------------------------------------------- */
 exports.sendOtp = async (req, res) => {
   try {
@@ -121,7 +145,7 @@ exports.sendOtp = async (req, res) => {
     if (!gmailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: "Please enter a valid Gmail address.",
+        message: "Please enter a valid Gmail address (example@gmail.com).",
       });
     }
 
@@ -129,38 +153,41 @@ exports.sendOtp = async (req, res) => {
     const expiresInMinutes = parseInt(process.env.OTP_EXP_MINUTES || "10", 10);
     const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
-    // Save OTP
+    // Upsert OTP record
     await Otp.findOneAndUpdate(
       { email },
       { code, expiresAt, verified: false },
       { upsert: true, new: true }
     );
 
-    // SEND OTP USING RESEND
-    await sendMail({
+    const mailOptions = {
+      from: process.env.MAIL_USER,
       to: email,
       subject: "Your Prescripto Verification Code",
       html: `
         <p>Your OTP code is: <b>${code}</b></p>
-        <p>This OTP expires in ${expiresInMinutes} minutes.</p>
+        <p>This code will expire in ${expiresInMinutes} minutes.</p>
       `,
-    });
+    };
+
+    await transporter.sendMail(mailOptions);
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent to your Gmail.",
+      message: "OTP sent to your Gmail address.",
     });
   } catch (error) {
     console.error("sendOtp error:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to send OTP.",
+      message: "Failed to send OTP. Please try again later.",
     });
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 VERIFY OTP
+   🔹 0️⃣ VERIFY OTP
+   POST /api/auth/verify-otp
 --------------------------------------------------------- */
 exports.verifyOtp = async (req, res) => {
   try {
@@ -169,7 +196,7 @@ exports.verifyOtp = async (req, res) => {
     if (!email || !code) {
       return res.status(400).json({
         success: false,
-        message: "Email and OTP are required",
+        message: "Email and OTP code are required",
       });
     }
 
@@ -178,21 +205,28 @@ exports.verifyOtp = async (req, res) => {
     if (!otpRecord) {
       return res.status(400).json({
         success: false,
-        message: "No OTP found for this email.",
+        message: "No OTP found for this email. Please request a new one.",
+      });
+    }
+
+    if (otpRecord.verified) {
+      return res.status(200).json({
+        success: true,
+        message: "Email already verified.",
       });
     }
 
     if (otpRecord.expiresAt < new Date()) {
       return res.status(400).json({
         success: false,
-        message: "OTP expired. Request a new one.",
+        message: "OTP has expired. Please request a new one.",
       });
     }
 
     if (otpRecord.code !== code) {
       return res.status(400).json({
         success: false,
-        message: "Incorrect OTP",
+        message: "Invalid OTP. Please try again.",
       });
     }
 
@@ -201,7 +235,7 @@ exports.verifyOtp = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "OTP verified successfully.",
+      message: "OTP verified successfully. You can now complete registration.",
     });
   } catch (error) {
     console.error("verifyOtp error:", error);
@@ -213,23 +247,25 @@ exports.verifyOtp = async (req, res) => {
 };
 
 /* ---------------------------------------------------------
-   🔹 REGISTER PATIENT
+   1️⃣ REGISTER PATIENT  (REQUIRES VERIFIED OTP)
 --------------------------------------------------------- */
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password)
-      return res.status(400).json({ message: "All fields required" });
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
     const exists = await User.findOne({ email });
-    if (exists)
+    if (exists) {
       return res.status(400).json({ message: "User already exists" });
+    }
 
     const otpRecord = await Otp.findOne({ email });
     if (!otpRecord || !otpRecord.verified) {
       return res.status(400).json({
-        message: "Please verify your email with OTP.",
+        message: "Please verify your email with OTP before registering.",
       });
     }
 
@@ -255,12 +291,12 @@ exports.registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("registerUser error:", error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: "Server Error: " + error.message });
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 LOGIN PATIENT
+   2️⃣ LOGIN PATIENT
 --------------------------------------------------------- */
 exports.loginUser = async (req, res) => {
   try {
@@ -268,12 +304,16 @@ exports.loginUser = async (req, res) => {
 
     const user = await User.findOne({ email, role: "patient" });
 
-    if (!user)
-      return res.status(400).json({ message: "Patient not found" });
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "No patient found with this email" });
+    }
 
     const match = await user.matchPassword(password);
-    if (!match)
+    if (!match) {
       return res.status(400).json({ message: "Incorrect password" });
+    }
 
     return res.json({
       success: true,
@@ -285,31 +325,48 @@ exports.loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("loginUser error:", error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: "Server Error: " + error.message });
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 REGISTER DOCTOR
+   3️⃣ REGISTER DOCTOR  (REQUIRES VERIFIED OTP + DOCUMENTS)
+   Uses multer (req.files) + Cloudinary
 --------------------------------------------------------- */
 exports.registerDoctor = async (req, res) => {
   try {
-    const { name, email, password, speciality, experience, fees, about } =
-      req.body;
+    const {
+      name,
+      email,
+      password,
+      speciality,
+      experience,
+      fees,
+      about,
+    } = req.body;
 
-    if (!name || !email || !password)
-      return res.status(400).json({ message: "Name, email & password required" });
-
-    const exists = await Doctor.findOne({ email });
-    if (exists)
-      return res.status(400).json({ message: "Doctor already exists" });
-
-    const otpRecord = await Otp.findOne({ email });
-    if (!otpRecord || !otpRecord.verified)
+    // Basic validation
+    if (!name || !email || !password) {
       return res
         .status(400)
-        .json({ message: "Please verify your email with OTP." });
+        .json({ message: "Name, email & password are required" });
+    }
 
+    // Check if doctor already exists
+    const exists = await Doctor.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "Doctor already exists" });
+    }
+
+    // Check OTP verification
+    const otpRecord = await Otp.findOne({ email });
+    if (!otpRecord || !otpRecord.verified) {
+      return res.status(400).json({
+        message: "Please verify your email with OTP before registering.",
+      });
+    }
+
+    // Create User record (User model will hash password itself)
     const user = await User.create({
       name,
       email,
@@ -317,45 +374,63 @@ exports.registerDoctor = async (req, res) => {
       role: "doctor",
     });
 
+    // Hash password separately for Doctor model
     const hashed = await bcrypt.hash(password, 10);
 
+    // -----------------------------
+    //  CLOUDINARY UPLOADS (3 docs)
+    // -----------------------------
     let photoUrl = "";
     let idProofUrl = "";
     let degreeUrl = "";
 
     const files = req.files || {};
 
-    const uploadToCloudinary = async (file, folder, type = "image") => {
+    // 🔥 Generic helper: choose resource_type based on file kind
+    const uploadToCloudinary = async (file, folder, resourceType = "image") => {
       if (!file) return "";
 
       const result = await cloudinary.uploader.upload(file.path, {
         folder,
-        resource_type: type,
+        resource_type: resourceType, // "image" | "raw"
       });
 
+      // delete local temp file
       try {
         fs.unlinkSync(file.path);
-      } catch (err) {}
+      } catch (e) {
+        console.warn("Failed to delete temp file:", e.message);
+      }
 
       return result.secure_url;
     };
 
-    if (files.photo && files.photo[0])
-      photoUrl = await uploadToCloudinary(files.photo[0], "prescripto/photo");
+    // 👩‍⚕️ Profile photo = IMAGE
+    if (files.photo && files.photo[0]) {
+      photoUrl = await uploadToCloudinary(
+        files.photo[0],
+        "prescripto_doctors/photo",
+        "image"
+      );
+    }
 
-    if (files.idProof && files.idProof[0])
+    // 🪪 ID proof = RAW (pdf/image/doc)
+    if (files.idProof && files.idProof[0]) {
       idProofUrl = await uploadToCloudinary(
         files.idProof[0],
-        "prescripto/idProof",
+        "prescripto_doctors/idProof",
         "raw"
       );
+    }
 
-    if (files.degree && files.degree[0])
+    // 🎓 Degree document = RAW
+    if (files.degree && files.degree[0]) {
       degreeUrl = await uploadToCloudinary(
         files.degree[0],
-        "prescripto/degree",
+        "prescripto_doctors/degree",
         "raw"
       );
+    }
 
     const doctor = await Doctor.create({
       userId: user._id,
@@ -369,7 +444,7 @@ exports.registerDoctor = async (req, res) => {
       photoUrl,
       idProofUrl,
       degreeUrl,
-      status: "pending",
+      status: "pending", // 🔥 must be approved by admin
     });
 
     await Otp.deleteOne({ email });
@@ -378,7 +453,8 @@ exports.registerDoctor = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Doctor registered successfully. Await admin approval.",
+      message:
+        "Doctor registered successfully. Please wait for admin approval.",
       role: "doctor",
       token: generateToken(user._id, "doctor"),
       _id: doctor._id,
@@ -388,30 +464,40 @@ exports.registerDoctor = async (req, res) => {
     });
   } catch (error) {
     console.error("registerDoctor error:", error);
-    return res.status(500).json({ message: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server Error: " + error.message });
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 LOGIN DOCTOR
+   4️⃣ LOGIN DOCTOR  (FIXED VERSION)
 --------------------------------------------------------- */
 exports.loginDoctor = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // 1. Find doctor by email
     const doctor = await Doctor.findOne({ email });
-    if (!doctor)
-      return res.status(400).json({ message: "Doctor not found" });
+    if (!doctor) {
+      return res
+        .status(400)
+        .json({ message: "No doctor found with this email" });
+    }
 
+    // 2. Compare password with hashed doctor.password
     const match = await bcrypt.compare(password, doctor.password);
-    if (!match)
+    if (!match) {
       return res.status(400).json({ message: "Incorrect password" });
+    }
 
-    const user =
-      doctor.userId ||
-      (await User.findOne({ email, role: "doctor" }));
+    // 3. Try to find linked user (optional, for consistency)
+    const user = doctor.userId
+      ? await User.findById(doctor.userId)
+      : await User.findOne({ email, role: "doctor" });
 
-    const tokenId = user?._id || doctor._id;
+    // 4. Build token payload from userId if possible, else fallback to doctor._id
+    const tokenId = user ? user._id : doctor.userId || doctor._id;
 
     return res.json({
       success: true,
@@ -421,15 +507,18 @@ exports.loginDoctor = async (req, res) => {
       role: "doctor",
       token: generateToken(tokenId, "doctor"),
       status: doctor.status,
+      photoUrl: doctor.photoUrl,
+      idProofUrl: doctor.idProofUrl,
+      degreeUrl: doctor.degreeUrl,
     });
   } catch (error) {
     console.error("loginDoctor error:", error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: "Server Error: " + error.message });
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 LOGIN ADMIN
+   5️⃣ LOGIN ADMIN
 --------------------------------------------------------- */
 exports.loginAdmin = async (req, res) => {
   try {
@@ -437,12 +526,16 @@ exports.loginAdmin = async (req, res) => {
 
     const admin = await User.findOne({ email, role: "admin" });
 
-    if (!admin)
-      return res.status(400).json({ message: "Admin not found" });
+    if (!admin) {
+      return res
+        .status(400)
+        .json({ message: "No admin found with this email" });
+    }
 
     const match = await admin.matchPassword(password);
-    if (!match)
+    if (!match) {
       return res.status(400).json({ message: "Incorrect password" });
+    }
 
     return res.json({
       success: true,
@@ -454,12 +547,12 @@ exports.loginAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error("loginAdmin error:", error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: "Server Error: " + error.message });
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 FORGOT PASSWORD
+   6️⃣ FORGOT PASSWORD (Send reset email)
 --------------------------------------------------------- */
 exports.forgotPassword = async (req, res) => {
   try {
@@ -467,7 +560,9 @@ exports.forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(400).json({ message: "No user found" });
+      return res
+        .status(400)
+        .json({ message: "No user found with this email" });
 
     const token = crypto.randomBytes(32).toString("hex");
 
@@ -477,17 +572,18 @@ exports.forgotPassword = async (req, res) => {
 
     const resetURL = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
-    await sendMail({
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
       to: user.email,
       subject: "Password Reset Request",
       html: `
         <h2>Reset Your Password</h2>
-        <p>Click below:</p>
+        <p>Click the link below to reset your password:</p>
         <a href="${resetURL}">${resetURL}</a>
       `,
     });
 
-    return res.json({ success: true, message: "Reset link sent" });
+    return res.json({ success: true, message: "Reset link sent to email" });
   } catch (error) {
     console.error("forgotPassword error:", error);
     return res.status(500).json({ message: error.message });
@@ -495,7 +591,7 @@ exports.forgotPassword = async (req, res) => {
 };
 
 /* ---------------------------------------------------------
-   🔹 RESET PASSWORD
+   7️⃣ RESET PASSWORD
 --------------------------------------------------------- */
 exports.resetPassword = async (req, res) => {
   try {
