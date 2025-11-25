@@ -1,20 +1,23 @@
-// backend/utils/mailer.js
+// server/utils/mailer.js
+// FINAL DUMMY MAILER — SAFE, NO SMTP, NO RESEND, NO ERRORS
 
 async function sendMail({ to, subject, text, html }) {
   try {
-    console.log("Email sending skipped (SMTP/Nodemailer removed)");
-    console.log("To:", to);
-    console.log("Subject:", subject);
-    console.log("HTML/Text:", html || text);
+    console.log("----------------------------------------------------");
+    console.log("📧 Email sending skipped (Backend email disabled)");
+    console.log("➡️  To:", to);
+    console.log("➡️  Subject:", subject);
+    console.log("➡️  Content:", html || text || "(no content provided)");
+    console.log("----------------------------------------------------");
 
-    // Dummy success response
+    // Return a dummy success (backend won't send real email)
     return {
       success: true,
-      message: "Email sending disabled (no SMTP configured)",
+      message: "Email sending disabled on backend (using dummy mailer)",
     };
   } catch (error) {
-    console.error("Email error:", error);
-    throw error;
+    console.error("❌ Dummy mailer error:", error);
+    throw error; // not required, but keeps logs clean
   }
 }
 
