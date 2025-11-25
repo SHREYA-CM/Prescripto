@@ -1,40 +1,49 @@
-// frontend/src/helpers/emailjsOtp.js
-
+// src/helpers/emailjsOtp.js
 import emailjs from "@emailjs/browser";
 
-// 👇 Tumhare EmailJS ke real credentials
-const SERVICE_ID = "service_rigiks1";      // Email Services se
-const TEMPLATE_ID = "template_qz1mjkl";    // OTP template ka ID
-const PUBLIC_KEY = "hf_0d8Xbc4P1oVZIT";    // Account -> Public key
+const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 
-// Init (optional but safe)
-emailjs.init({
-  publicKey: PUBLIC_KEY,
-});
+// (optional) init – safe call
+if (publicKey) {
+  emailjs.init(publicKey);
+} else {
+  console.warn(
+    "EmailJS public key missing – check VITE_EMAILJS_PUBLIC_KEY in .env"
+  );
+}
 
-/**
- * Send OTP email using EmailJS
- * @param {string} toEmail - jisko OTP bhejna hai
- * @param {string} otpCode - 6 digit OTP
- */
-export async function sendOtpEmail(toEmail, otpCode) {
+export const sendOtpEmail = async (toEmail, otp) => {
+  // Ye names tumhare template ke variables se match karne chahiye:
+  // {{email}}  and  {{passcode}}
   const templateParams = {
-    to_email: toEmail, // <- EmailJS template me {{to_email}}
-    otp: otpCode,      // <- EmailJS template me {{otp}}
+    email: toEmail,
+    passcode: otp,
+    // time: new Date().toLocaleString(), // agar template me {{time}} use karna ho
   };
 
   try {
+    if (!serviceId || !templateId || !publicKey) {
+      console.error("EmailJS ENV missing", {
+        serviceId,
+        templateId,
+        publicKey,
+      });
+      throw new Error("EmailJS configuration missing");
+    }
+
     const res = await emailjs.send(
-      SERVICE_ID,
-      TEMPLATE_ID,
+      serviceId,
+      templateId,
       templateParams,
-      { publicKey: PUBLIC_KEY } // v4 syntax
+      publicKey
     );
 
-    console.log("EmailJS OTP send response:", res.status, res.text);
-    return res;
+    console.log("EmailJS OTP sent:", res.status, res.text);
+    return true;
   } catch (error) {
     console.error("EmailJS OTP error (details):", error);
     throw error;
   }
-}
+};
