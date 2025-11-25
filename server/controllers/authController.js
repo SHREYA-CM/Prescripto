@@ -1,4 +1,4 @@
-// backend/controllers/authController.js
+// server/controllers/authController.js
 
 const User = require("../models/user");
 const Doctor = require("../models/doctor.js");
@@ -13,7 +13,7 @@ const crypto = require("crypto");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 
-const { sendMail } = require("../utils/mailer"); // using Resend / mailer utility
+const { sendMail } = require("../utils/mailer"); // using dummy mailer now
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -57,6 +57,7 @@ const sendWelcomeEmail = async (email, name, role) => {
 
 /* ---------------------------------------------------------
    🔹 GENERATE 6-DIGIT OTP
+   (currently unused on backend – kept for future)
 --------------------------------------------------------- */
 const generateOtpCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -472,7 +473,7 @@ exports.loginAdmin = async (req, res) => {
 
 /* ---------------------------------------------------------
    6️⃣ FORGOT PASSWORD 
-   (still uses sendMail – optional feature)
+   (still uses sendMail – but our mailer is dummy now)
 --------------------------------------------------------- */
 exports.forgotPassword = async (req, res) => {
   try {
