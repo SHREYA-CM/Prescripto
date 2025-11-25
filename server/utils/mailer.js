@@ -1,27 +1,17 @@
 // backend/utils/mailer.js
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
 
 async function sendMail({ to, subject, text, html }) {
   try {
-    const response = await transporter.sendMail({
-      from: `"Prescripto" <${process.env.MAIL_USER}>`,
-      to,
-      subject,
-      html: html || `<p>${text}</p>`,
-    });
+    console.log("Email sending skipped (SMTP/Nodemailer removed)");
+    console.log("To:", to);
+    console.log("Subject:", subject);
+    console.log("HTML/Text:", html || text);
 
-    console.log("Email Sent:", response.messageId);
-    return response;
+    // Dummy success response
+    return {
+      success: true,
+      message: "Email sending disabled (no SMTP configured)",
+    };
   } catch (error) {
     console.error("Email error:", error);
     throw error;
