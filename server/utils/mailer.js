@@ -1,27 +1,21 @@
 // backend/utils/mailer.js
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS, // App password
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendMail({ to, subject, text, html }) {
   try {
-    const response = await transporter.sendMail({
-      from: `"Prescripto" <${process.env.MAIL_USER}>`,
+    const response = await resend.emails.send({
+      from: "Prescripto <onboarding@resend.dev>",   // or your custom domain
       to,
       subject,
       html: html || `<p>${text}</p>`,
     });
 
-    console.log("Email Sent:", response);
+    console.log("OTP Email Sent:", response.id);
     return response;
   } catch (error) {
-    console.error("Email error:", error);
+    console.error("Resend Email Error:", error);
     throw error;
   }
 }
