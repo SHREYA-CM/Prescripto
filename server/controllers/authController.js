@@ -2,6 +2,9 @@
 
 const User = require("../models/user");
 const Doctor = require("../models/doctor.js");
+// NOTE: Otp is no longer required for registration flow,
+// but keeping import in case you want to reuse it later.
+// If not used anywhere else, you can remove this line.
 const Otp = require("../models/Otp");
 
 const jwt = require("jsonwebtoken");
@@ -10,7 +13,7 @@ const crypto = require("crypto");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 
-const { sendMail } = require("../utils/mailer"); // ✅ using Resend now
+const { sendMail } = require("../utils/mailer"); // using Resend / mailer utility
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -25,7 +28,7 @@ const generateToken = (id, role) => {
 const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 
 /* ---------------------------------------------------------
-   🔹 SEND WELCOME EMAIL (Resend)
+   🔹 SEND WELCOME EMAIL (optional – safe failure)
 --------------------------------------------------------- */
 const sendWelcomeEmail = async (email, name, role) => {
   try {
@@ -48,6 +51,7 @@ const sendWelcomeEmail = async (email, name, role) => {
     console.log(`Welcome email sent to ${email}`);
   } catch (err) {
     console.error("Error sending welcome email:", err.message);
+    // NOTE: we are NOT throwing here, so registration will still succeed
   }
 };
 
@@ -103,7 +107,8 @@ exports.verifyEmail = async (req, res) => {
 };
 
 /* ---------------------------------------------------------
-   🔹 0️⃣ SEND OTP (Resend)
+   🔹 0️⃣ SEND OTP 
+      (DISABLED: OTP is now sent by frontend via EmailJS)
 --------------------------------------------------------- */
 exports.sendOtp = async (req, res) => {
   try {
@@ -123,40 +128,29 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
-    const code = generateOtpCode();
-    const expiresInMinutes = parseInt(process.env.OTP_EXP_MINUTES || "10", 10);
-    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
-
-    await Otp.findOneAndUpdate(
-      { email },
-      { code, expiresAt, verified: false },
-      { upsert: true, new: true }
+    // 👉 Previously: generateOtpCode + save in DB + sendMail via Resend/nodemailer
+    // Ab ye sab frontend + EmailJS handle karega.
+    console.log(
+      "[sendOtp] OTP sending is handled on the frontend (EmailJS). Email:",
+      email
     );
-
-    await sendMail({
-      to: email,
-      subject: "Your Prescripto Verification Code",
-      html: `
-        <p>Your OTP code is: <b>${code}</b></p>
-        <p>This code will expire in ${expiresInMinutes} minutes.</p>
-      `,
-    });
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent to your Gmail address.",
+      message: "OTP is being handled on the frontend.",
     });
   } catch (error) {
-    console.error("sendOtp error:", error);
+    console.error("sendOtp error (disabled):", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to send OTP. Please try again later.",
+      message: "Server error in sendOtp.",
     });
   }
 };
 
 /* ---------------------------------------------------------
-   🔹 0️⃣ VERIFY OTP
+   🔹 0️⃣ VERIFY OTP 
+      (DISABLED: OTP is verified on frontend)
 --------------------------------------------------------- */
 exports.verifyOtp = async (req, res) => {
   try {
@@ -169,45 +163,21 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    const otpRecord = await Otp.findOne({ email });
-
-    if (!otpRecord) {
-      return res.status(400).json({
-        success: false,
-        message: "No OTP found for this email. Please request a new one.",
-      });
-    }
-
-    if (otpRecord.verified) {
-      return res.status(200).json({
-        success: true,
-        message: "Email already verified.",
-      });
-    }
-
-    if (otpRecord.expiresAt < new Date()) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired. Please request a new one.",
-      });
-    }
-
-    if (otpRecord.code !== code) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP. Please try again.",
-      });
-    }
-
-    otpRecord.verified = true;
-    await otpRecord.save();
+    // 👉 Previously: fetch Otp from DB, check expiry & code etc.
+    // Ab: frontend already verified entered OTP against what it sent.
+    console.log(
+      "[verifyOtp] OTP verification is handled on the frontend. Email:",
+      email,
+      "Code:",
+      code
+    );
 
     return res.status(200).json({
       success: true,
-      message: "OTP verified successfully.",
+      message: "OTP verified on frontend.",
     });
   } catch (error) {
-    console.error("verifyOtp error:", error);
+    console.error("verifyOtp error (disabled):", error);
     return res.status(500).json({
       success: false,
       message: "Server error while verifying OTP",
@@ -231,12 +201,13 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const otpRecord = await Otp.findOne({ email });
-    if (!otpRecord || !otpRecord.verified) {
-      return res.status(400).json({
-        message: "Please verify your email with OTP before registering.",
-      });
-    }
+    // 🔴 IMPORTANT:
+    // Pehle yahan Otp record check hota tha:
+    // const otpRecord = await Otp.findOne({ email });
+    // if (!otpRecord || !otpRecord.verified) { ... }
+    //
+    // Ab OTP frontend pe handle ho raha hai, isliye
+    // registration ko yahan block nahi kar rahe.
 
     const user = await User.create({
       name,
@@ -245,8 +216,10 @@ exports.registerUser = async (req, res) => {
       role: "patient",
     });
 
-    await Otp.deleteOne({ email });
+    // OTP DB record delete bhi ab needed nahi:
+    // await Otp.deleteOne({ email });
 
+    // Welcome email optional – failure pe registration fail nahi karega
     sendWelcomeEmail(user.email, user.name, "patient");
 
     return res.status(201).json({
@@ -324,12 +297,9 @@ exports.registerDoctor = async (req, res) => {
       return res.status(400).json({ message: "Doctor already exists" });
     }
 
-    const otpRecord = await Otp.findOne({ email });
-    if (!otpRecord || !otpRecord.verified) {
-      return res.status(400).json({
-        message: "Please verify your email with OTP before registering.",
-      });
-    }
+    // 🔴 IMPORTANT:
+    // Pehle yahan bhi Otp record check hota tha.
+    // Ab OTP frontend pe verify ho chuka hota hai, so we skip DB check.
 
     const user = await User.create({
       name,
@@ -400,7 +370,7 @@ exports.registerDoctor = async (req, res) => {
       status: "pending",
     });
 
-    await Otp.deleteOne({ email });
+    // await Otp.deleteOne({ email }); // not needed now
 
     sendWelcomeEmail(user.email, user.name, "doctor");
 
@@ -501,7 +471,8 @@ exports.loginAdmin = async (req, res) => {
 };
 
 /* ---------------------------------------------------------
-   6️⃣ FORGOT PASSWORD (Resend)
+   6️⃣ FORGOT PASSWORD 
+   (still uses sendMail – optional feature)
 --------------------------------------------------------- */
 exports.forgotPassword = async (req, res) => {
   try {
