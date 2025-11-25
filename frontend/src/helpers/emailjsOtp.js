@@ -35,7 +35,7 @@ const checkBaseConfig = () => {
   }
 };
 
-// 1️⃣ OTP Email (same as before)
+// 1️⃣ OTP Email
 export const sendOtpEmail = async (toEmail, otp) => {
   checkBaseConfig();
 
@@ -47,6 +47,8 @@ export const sendOtpEmail = async (toEmail, otp) => {
     email: toEmail,
     passcode: otp,
   };
+
+  console.log("EmailJS OTP → service:", serviceId, "template:", templateOtpId);
 
   const res = await emailjs.send(
     serviceId,
@@ -76,6 +78,13 @@ export const sendWelcomeEmail = async (email, name, role) => {
     isForgot: false,
   };
 
+  console.log(
+    "EmailJS Welcome → service:",
+    serviceId,
+    "template:",
+    templateWelcomeId
+  );
+
   const res = await emailjs.send(
     serviceId,
     templateWelcomeId,
@@ -86,7 +95,7 @@ export const sendWelcomeEmail = async (email, name, role) => {
   return true;
 };
 
-// 3️⃣ Doctor Account Approved Email (same multi-purpose template)
+// 3️⃣ Doctor Account Approved Email
 export const sendDoctorApprovedEmail = async (email, name) => {
   checkBaseConfig();
 
@@ -102,6 +111,13 @@ export const sendDoctorApprovedEmail = async (email, name) => {
     isForgot: false,
   };
 
+  console.log(
+    "EmailJS Approved → service:",
+    serviceId,
+    "template:",
+    templateApprovedId
+  );
+
   const res = await emailjs.send(
     serviceId,
     templateApprovedId,
@@ -112,7 +128,7 @@ export const sendDoctorApprovedEmail = async (email, name) => {
   return true;
 };
 
-// 4️⃣ Forgot Password Email (same multi-purpose template)
+// 4️⃣ Forgot Password Email
 export const sendForgotPasswordEmail = async (email, reset_url) => {
   checkBaseConfig();
 
@@ -123,11 +139,17 @@ export const sendForgotPasswordEmail = async (email, reset_url) => {
   const templateParams = {
     email,
     reset_url,
-    // name optional hai – agar tum pass karna chaho to kar sakti ho
     isWelcome: false,
     isApproved: false,
     isForgot: true,
   };
+
+  console.log(
+    "EmailJS Forgot → service:",
+    serviceId,
+    "template:",
+    `"${templateForgotId}"`
+  );
 
   const res = await emailjs.send(
     serviceId,
