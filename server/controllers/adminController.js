@@ -3,18 +3,8 @@
 const Doctor = require("../models/doctor");
 const User = require("../models/user");
 const Appointment = require("../models/Appointment");
-const nodemailer = require("nodemailer");
 
-/* ============================================================
-   EMAIL TRANSPORTER (same as authController.js)
-============================================================ */
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+const { sendMail } = require("../utils/mailer"); // ✅ Using Resend instead of Nodemailer
 
 /* ============================================================
    Helper → Send Doctor Status Email (approved / rejected)
@@ -43,8 +33,7 @@ const sendDoctorStatusEmail = async (doctor, status) => {
       `;
     }
 
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
+    await sendMail({
       to: doctor.email,
       subject,
       html,
@@ -219,7 +208,7 @@ exports.updateAppointmentStatus = async (req, res) => {
 };
 
 /* ============================================================
-   🔟 Admin → Dashboard Analytics Summary
+   🔟 Admin → Analytics Summary
 ============================================================ */
 exports.getAnalyticsSummary = async (req, res) => {
   try {
