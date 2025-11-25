@@ -1,23 +1,31 @@
-// frontend/src/helpers/emailjsOtp.js
+// backend/utils/mailer.js
+const nodemailer = require("nodemailer");
 
-import emailjs from "@emailjs/browser";
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,  // Gmail App Password
+  },
+});
 
-export const sendOtpEmail = async (email, otpCode) => {
+async function sendMail({ to, subject, text, html }) {
   try {
-    const response = await emailjs.send(
-      "service_rigiks1",       // <-- your Service ID
-      "template_qz1mjkl",      // <-- your Template ID
-      {
-        to_email: email,       // matches variable name in template
-        otp: otpCode,          // matches "otp" variable in template
-      },
-      "hf_0d8Xbc4P1oVZIT"      // <-- your Public Key
-    );
+    const response = await transporter.sendMail({
+      from: `"Prescripto" <${process.env.MAIL_USER}>`,
+      to,
+      subject,
+      html: html || `<p>${text}</p>`,
+    });
 
-    console.log("EmailJS Response:", response);
-    return { success: true };
+    console.log("Email Sent:", response.messageId);
+    return response;
   } catch (error) {
-    console.error("EmailJS Error:", error);
-    return { success: false, error };
+    console.error("Email error:", error);
+    throw error;
   }
-};
+}
+
+module.exports = { sendMail };
