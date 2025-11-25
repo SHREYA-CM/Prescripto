@@ -4,7 +4,6 @@ const User = require("../models/user");
 const Doctor = require("../models/doctor.js");
 // NOTE: Otp is no longer required for registration flow,
 // but keeping import in case you want to reuse it later.
-// If not used anywhere else, you can remove this line.
 const Otp = require("../models/Otp");
 
 const jwt = require("jsonwebtoken");
@@ -13,7 +12,8 @@ const crypto = require("crypto");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 
-const { sendMail } = require("../utils/mailer"); // using dummy mailer now
+// ❌ NO MAILER NOW – backend will not send any emails
+// const { sendMail } = require("../utils/mailer");
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -26,42 +26,6 @@ const generateToken = (id, role) => {
    🔹 GMAIL REGEX (Only allow @gmail.com here)
 --------------------------------------------------------- */
 const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-
-/* ---------------------------------------------------------
-   🔹 SEND WELCOME EMAIL (optional – safe failure)
---------------------------------------------------------- */
-const sendWelcomeEmail = async (email, name, role) => {
-  try {
-    const roleLabel =
-      role === "doctor"
-        ? "Doctor"
-        : role === "admin"
-        ? "Admin"
-        : "Patient";
-
-    await sendMail({
-      to: email,
-      subject: "Welcome to Prescripto 🎉",
-      html: `
-        <h2>Welcome, ${name}!</h2>
-        <p>Your <b>${roleLabel}</b> account has been created successfully on <b>Prescripto</b>.</p>
-      `,
-    });
-
-    console.log(`Welcome email sent to ${email}`);
-  } catch (err) {
-    console.error("Error sending welcome email:", err.message);
-    // NOTE: we are NOT throwing here, so registration will still succeed
-  }
-};
-
-/* ---------------------------------------------------------
-   🔹 GENERATE 6-DIGIT OTP
-   (currently unused on backend – kept for future)
---------------------------------------------------------- */
-const generateOtpCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
 
 /* ---------------------------------------------------------
    🔹 0️⃣ VERIFY EMAIL 
@@ -129,7 +93,7 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
-    // 👉 Previously: generateOtpCode + save in DB + sendMail via Resend/nodemailer
+    // 👉 Previously: generateOtpCode + save in DB + sendMail
     // Ab ye sab frontend + EmailJS handle karega.
     console.log(
       "[sendOtp] OTP sending is handled on the frontend (EmailJS). Email:",
@@ -203,12 +167,8 @@ exports.registerUser = async (req, res) => {
     }
 
     // 🔴 IMPORTANT:
-    // Pehle yahan Otp record check hota tha:
-    // const otpRecord = await Otp.findOne({ email });
-    // if (!otpRecord || !otpRecord.verified) { ... }
-    //
-    // Ab OTP frontend pe handle ho raha hai, isliye
-    // registration ko yahan block nahi kar rahe.
+    // Pehle yahan Otp record check hota tha.
+    // Ab OTP frontend pe handle ho raha hai.
 
     const user = await User.create({
       name,
@@ -220,8 +180,8 @@ exports.registerUser = async (req, res) => {
     // OTP DB record delete bhi ab needed nahi:
     // await Otp.deleteOne({ email });
 
-    // Welcome email optional – failure pe registration fail nahi karega
-    sendWelcomeEmail(user.email, user.name, "patient");
+    // ❌ Welcome email ab frontend se EmailJS bhejega
+    // (React Register.jsx me sendWelcomeEmail call ho raha hai)
 
     return res.status(201).json({
       success: true,
@@ -373,7 +333,8 @@ exports.registerDoctor = async (req, res) => {
 
     // await Otp.deleteOne({ email }); // not needed now
 
-    sendWelcomeEmail(user.email, user.name, "doctor");
+    // ❌ Welcome email ab frontend se EmailJS bhejega
+    // (React Register.jsx me sendWelcomeEmail call ho raha hai)
 
     return res.status(201).json({
       success: true,
@@ -473,40 +434,49 @@ exports.loginAdmin = async (req, res) => {
 
 /* ---------------------------------------------------------
    6️⃣ FORGOT PASSWORD 
-   (still uses sendMail – but our mailer is dummy now)
+   ✅ NOW: only generate token + resetURL
+   ✅ NO EMAIL FROM BACKEND
 --------------------------------------------------------- */
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
     const user = await User.findOne({ email });
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: "No user found with this email" });
+
+    // Security: user na mile to bhi generic success response
+    if (!user) {
+      return res.json({
+        success: true,
+        resetURL: null,
+      });
+    }
 
     const token = crypto.randomBytes(32).toString("hex");
 
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    const baseUrl =
+      process.env.FRONTEND_URL || "http://localhost:5173";
 
-    await sendMail({
-      to: user.email,
-      subject: "Password Reset Request",
-      html: `
-        <h2>Reset Your Password</h2>
-        <p>Click the link below to reset your password:</p>
-        <a href="${resetURL}">${resetURL}</a>
-      `,
+    const resetURL = `${baseUrl}/reset-password/${token}`;
+
+    // ❌ NO EMAIL HERE – frontend EmailJS handle karega
+    return res.json({
+      success: true,
+      resetURL,
     });
-
-    return res.json({ success: true, message: "Reset link sent to email" });
   } catch (error) {
     console.error("forgotPassword error:", error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
