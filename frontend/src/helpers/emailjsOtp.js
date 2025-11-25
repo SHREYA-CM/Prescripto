@@ -4,11 +4,17 @@ import emailjs from "@emailjs/browser";
 const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 
-// ✅ ENV names as per requirement
+// 🔐 Template IDs from .env
+// OTP template (One-Time Password)
 const templateOtpId = import.meta.env.VITE_EMAILJS_TEMPLATE_OTP;
+
+// Multi-purpose template ID (Welcome / Approved / Forgot sab isi se)
+// FREE plan me: in tino envs me SAME ID rakh sakti ho
 const templateWelcomeId = import.meta.env.VITE_EMAILJS_TEMPLATE_WELCOME;
-const templateApprovedId = import.meta.env.VITE_EMAILJS_TEMPLATE_APPROVED;
-const templateForgotId = import.meta.env.VITE_EMAILJS_TEMPLATE_FORGOT;
+const templateApprovedId =
+  import.meta.env.VITE_EMAILJS_TEMPLATE_APPROVED || templateWelcomeId;
+const templateForgotId =
+  import.meta.env.VITE_EMAILJS_TEMPLATE_FORGOT || templateWelcomeId;
 
 // (optional) init – safe call
 if (publicKey) {
@@ -29,7 +35,7 @@ const checkBaseConfig = () => {
   }
 };
 
-// 1️⃣ OTP Email (as-is, bas env name naya)
+// 1️⃣ OTP Email (same as before)
 export const sendOtpEmail = async (toEmail, otp) => {
   checkBaseConfig();
 
@@ -37,32 +43,23 @@ export const sendOtpEmail = async (toEmail, otp) => {
     throw new Error("VITE_EMAILJS_TEMPLATE_OTP is not set");
   }
 
-  // Ye names tumhare template ke variables se match karne chahiye:
-  // {{email}}  and  {{passcode}}
   const templateParams = {
     email: toEmail,
     passcode: otp,
-    // time: new Date().toLocaleString(),
   };
 
-  try {
-    const res = await emailjs.send(
-      serviceId,
-      templateOtpId,
-      templateParams,
-      publicKey
-    );
+  const res = await emailjs.send(
+    serviceId,
+    templateOtpId,
+    templateParams,
+    publicKey
+  );
 
-    console.log("EmailJS OTP sent:", res.status, res.text);
-    return true;
-  } catch (error) {
-    console.error("EmailJS OTP error (details):", error);
-    throw error;
-  }
+  console.log("EmailJS OTP sent:", res.status, res.text);
+  return true;
 };
 
-// 2️⃣ Welcome / Registration Successful Email
-// template variables example: {{email}}, {{name}}, {{role}}
+// 2️⃣ Welcome Email (multi-purpose template)
 export const sendWelcomeEmail = async (email, name, role) => {
   checkBaseConfig();
 
@@ -74,25 +71,22 @@ export const sendWelcomeEmail = async (email, name, role) => {
     email,
     name,
     role,
+    isWelcome: true,
+    isApproved: false,
+    isForgot: false,
   };
 
-  try {
-    const res = await emailjs.send(
-      serviceId,
-      templateWelcomeId,
-      templateParams,
-      publicKey
-    );
-    console.log("Welcome email sent:", res.status, res.text);
-    return true;
-  } catch (error) {
-    console.error("Welcome email error:", error);
-    throw error;
-  }
+  const res = await emailjs.send(
+    serviceId,
+    templateWelcomeId,
+    templateParams,
+    publicKey
+  );
+  console.log("Welcome email sent:", res.status, res.text);
+  return true;
 };
 
-// 3️⃣ Doctor Account Approved Email
-// template variables example: {{email}}, {{name}}
+// 3️⃣ Doctor Account Approved Email (same multi-purpose template)
 export const sendDoctorApprovedEmail = async (email, name) => {
   checkBaseConfig();
 
@@ -103,25 +97,22 @@ export const sendDoctorApprovedEmail = async (email, name) => {
   const templateParams = {
     email,
     name,
+    isWelcome: false,
+    isApproved: true,
+    isForgot: false,
   };
 
-  try {
-    const res = await emailjs.send(
-      serviceId,
-      templateApprovedId,
-      templateParams,
-      publicKey
-    );
-    console.log("Doctor approved email sent:", res.status, res.text);
-    return true;
-  } catch (error) {
-    console.error("Doctor approved email error:", error);
-    throw error;
-  }
+  const res = await emailjs.send(
+    serviceId,
+    templateApprovedId,
+    templateParams,
+    publicKey
+  );
+  console.log("Doctor approved email sent:", res.status, res.text);
+  return true;
 };
 
-// 4️⃣ Forgot Password Email (reset link)
-// template variables example: {{email}}, {{reset_url}}
+// 4️⃣ Forgot Password Email (same multi-purpose template)
 export const sendForgotPasswordEmail = async (email, reset_url) => {
   checkBaseConfig();
 
@@ -132,19 +123,18 @@ export const sendForgotPasswordEmail = async (email, reset_url) => {
   const templateParams = {
     email,
     reset_url,
+    // name optional hai – agar tum pass karna chaho to kar sakti ho
+    isWelcome: false,
+    isApproved: false,
+    isForgot: true,
   };
 
-  try {
-    const res = await emailjs.send(
-      serviceId,
-      templateForgotId,
-      templateParams,
-      publicKey
-    );
-    console.log("Forgot password email sent:", res.status, res.text);
-    return true;
-  } catch (error) {
-    console.error("Forgot password email error:", error);
-    throw error;
-  }
+  const res = await emailjs.send(
+    serviceId,
+    templateForgotId,
+    templateParams,
+    publicKey
+  );
+  console.log("Forgot password email sent:", res.status, res.text);
+  return true;
 };
