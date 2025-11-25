@@ -1,8 +1,10 @@
+// src/pages/ForgotPassword.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import api from "../api/axios";
 import "./AuthForm.css";
+import { sendForgotPasswordEmail } from "../helpers/emailjsOtp"; // ✅ NEW IMPORT
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -15,10 +17,24 @@ const ForgotPassword = () => {
     try {
       setLoading(true);
 
-      await api.post("/api/auth/forgot-password", { email });
+      const { data } = await api.post("/api/auth/forgot-password", { email });
 
-      toast.success("Reset link sent to your email (if account exists)");
-      setEmail("");
+      if (data?.success) {
+        // backend sirf resetURL dega, email nahi bhejega
+        if (data.resetURL) {
+          try {
+            await sendForgotPasswordEmail(email, data.resetURL);
+          } catch (err) {
+            console.error("EmailJS forgot password error:", err);
+            // email fail ho jaye, phir bhi generic message
+          }
+        }
+
+        toast.success("Reset link sent to your email (if account exists)");
+        setEmail("");
+      } else {
+        toast.error(data?.message || "Failed to send reset link");
+      }
     } catch (error) {
       console.error("Forgot password error:", error);
       const msg =
