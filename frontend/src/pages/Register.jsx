@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import api from '../api/axios';
 import './AuthForm.css';
-import { sendOtpEmail } from '../helpers/emailjsOtp'; // ✅ UPDATED IMPORT
+import { sendOtpEmail, sendWelcomeEmail } from '../helpers/emailjsOtp'; // ✅ UPDATED IMPORT
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -270,6 +270,22 @@ const Register = () => {
 
       const { data } = await api.post(url, payload, config);
 
+      if (data?.success === false) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      // ✅ Registration successful → send Welcome Email (patient + doctor dono ke liye)
+      try {
+        await sendWelcomeEmail(
+          formData.email.trim(),
+          formData.name.trim(),
+          formData.role
+        );
+      } catch (err) {
+        console.error("Welcome email error:", err);
+        // Email fail ho bhi jaye to registration fail mat karo
+      }
+
       if (formData.role === 'doctor') {
         toast.success(
           data.message ||
@@ -281,7 +297,7 @@ const Register = () => {
         navigate('/patient-login');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      toast.error(error.response?.data?.message || error.message || 'Registration failed');
     } finally {
       setSubmitting(false);
     }
