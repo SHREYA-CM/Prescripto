@@ -1,6 +1,6 @@
 // server/utils/mailer.js
 // FINAL DUMMY MAILER – backend se actual email nahi jayega
-// sirf console me log ayega, taaki Resend/nodemailer ke errors band ho jayein.
+// sirf console me log ayega, taaki Resend/nodemailer/EmailJS ke errors band ho jayein.
 
 async function sendMail({ to, subject, text, html }) {
   try {
