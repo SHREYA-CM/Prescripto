@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import api from '../api/axios';
 import './AuthForm.css';
-import { sendOtpEmail } from '../utils/emailjsOtp'; // ✅ NEW IMPORT
+import { sendOtpEmail } from '../helpers/emailjsOtp'; // ✅ UPDATED IMPORT
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -36,7 +36,7 @@ const Register = () => {
     code: '',
   });
 
-  // ✅ NEW: store generated OTP locally
+  // ✅ store generated OTP locally (frontend)
   const [generatedOtp, setGeneratedOtp] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +67,7 @@ const Register = () => {
         message: '',
         code: '',
       });
-      setGeneratedOtp(''); // ✅ reset otp
+      setGeneratedOtp(''); // ✅ reset otp on email change
     }
   };
 
@@ -130,7 +130,7 @@ const Register = () => {
     }
   };
 
-  // 🔁 UPDATED: Send OTP via EmailJS (no backend)
+  // 🔁 Send OTP via EmailJS (no backend)
   const handleSendOtp = async () => {
     const email = formData.email.trim();
 
@@ -181,7 +181,7 @@ const Register = () => {
     }
   };
 
-  // 🔁 UPDATED: Verify OTP on frontend (no backend)
+  // 🔁 Verify OTP on frontend (no backend)
   const handleVerifyOtp = () => {
     const code = otpState.code.trim();
 
