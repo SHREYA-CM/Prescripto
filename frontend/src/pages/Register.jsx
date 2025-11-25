@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import api from '../api/axios';
 import './AuthForm.css';
+import { sendOtpEmail } from '../utils/emailjsOtp'; // ✅ NEW IMPORT
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -35,6 +36,9 @@ const Register = () => {
     code: '',
   });
 
+  // ✅ NEW: store generated OTP locally
+  const [generatedOtp, setGeneratedOtp] = useState('');
+
   const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
@@ -63,6 +67,7 @@ const Register = () => {
         message: '',
         code: '',
       });
+      setGeneratedOtp(''); // ✅ reset otp
     }
   };
 
@@ -125,6 +130,7 @@ const Register = () => {
     }
   };
 
+  // 🔁 UPDATED: Send OTP via EmailJS (no backend)
   const handleSendOtp = async () => {
     const email = formData.email.trim();
 
@@ -152,27 +158,31 @@ const Register = () => {
     try {
       setOtpState((prev) => ({ ...prev, sending: true, message: '' }));
 
-      const { data } = await api.post('/api/auth/send-otp', { email });
+      // ✅ generate OTP in frontend
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(otp);
+
+      // ✅ send OTP via EmailJS
+      await sendOtpEmail(email, otp);
 
       setOtpState((prev) => ({
         ...prev,
         sending: false,
         sent: true,
-        message: data.message || 'OTP Sent!',
+        message: 'OTP Sent!',
       }));
 
       toast.success('OTP sent to your Gmail.');
     } catch (error) {
-      const msg =
-        error.response?.data?.message ||
-        'Failed to send OTP. Please try again.';
+      console.error(error);
+      const msg = 'Failed to send OTP. Please try again.';
       setOtpState((prev) => ({ ...prev, sending: false, message: msg }));
       toast.error(msg);
     }
   };
 
-  const handleVerifyOtp = async () => {
-    const email = formData.email.trim();
+  // 🔁 UPDATED: Verify OTP on frontend (no backend)
+  const handleVerifyOtp = () => {
     const code = otpState.code.trim();
 
     if (!code) {
@@ -183,40 +193,25 @@ const Register = () => {
       return;
     }
 
-    try {
-      setOtpState((prev) => ({ ...prev, verifying: true, message: '' }));
+    setOtpState((prev) => ({ ...prev, verifying: true, message: '' }));
 
-      const { data } = await api.post('/api/auth/verify-otp', { email, code });
-
-      if (data.success) {
-        setOtpState((prev) => ({
-          ...prev,
-          verifying: false,
-          verified: true,
-          message: 'OTP verified successfully!',
-        }));
-
-        toast.success('OTP verified!');
-      } else {
-        setOtpState((prev) => ({
-          ...prev,
-          verifying: false,
-          verified: false,
-          message: 'Invalid OTP.',
-        }));
-
-        toast.error('Invalid OTP.');
-      }
-    } catch (error) {
-      const msg =
-        error.response?.data?.message || 'Error verifying OTP. Try again.';
+    // simple local check
+    if (code === generatedOtp) {
+      setOtpState((prev) => ({
+        ...prev,
+        verifying: false,
+        verified: true,
+        message: 'OTP verified successfully!',
+      }));
+      toast.success('OTP verified!');
+    } else {
       setOtpState((prev) => ({
         ...prev,
         verifying: false,
         verified: false,
-        message: msg,
+        message: 'Invalid OTP.',
       }));
-      toast.error(msg);
+      toast.error('Invalid OTP.');
     }
   };
 
@@ -264,7 +259,6 @@ const Register = () => {
         fd.append('email', formData.email.trim());
         fd.append('password', formData.password.trim());
         // backend automatically sets role = "doctor" in User model
-        // speciality/experience/fees/about optional now
 
         if (doctorDocs.photo) fd.append('photo', doctorDocs.photo);
         if (doctorDocs.idProof) fd.append('idProof', doctorDocs.idProof);
@@ -425,7 +419,6 @@ const Register = () => {
           <select name="role" value={formData.role} onChange={handleChange}>
             <option value="patient">Patient</option>
             <option value="doctor">Doctor</option>
-            {/* Admin registration removed because backend doesn't have /register-admin */}
           </select>
         </div>
 
