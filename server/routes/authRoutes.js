@@ -48,7 +48,7 @@ router.post(
 );
 
 // Doctor Login
-router.post("/doctor-login", loginDoctor);  // ⬅️ POST /api/auth/doctor-login
+router.post("/doctor-login", loginDoctor);  // POST /api/auth/doctor-login
 
 /* -----------------------------------------------
    ADMIN ROUTES
