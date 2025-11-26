@@ -43,7 +43,10 @@ const AdminAppointments = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
+
+      // IMPORTANT: correct path + auth
       const res = await api.get("/api/admin/appointments", authConfig);
+
       setAppointments(res.data.appointments || []);
     } catch (err) {
       console.error("LOAD APPOINTMENTS ERROR:", err);
@@ -216,7 +219,7 @@ const AdminAppointments = () => {
                     )}
                   </div>
 
-                  {/* Right: status dropdown + fee */}
+                  {/* Right: status + amount */}
                   <div className="appts-actions">
                     {typeof appt.amount === "number" && (
                       <div className="appts-amount">
