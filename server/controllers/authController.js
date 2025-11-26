@@ -2,8 +2,7 @@
 
 const User = require("../models/user");
 const Doctor = require("../models/doctor.js");
-// NOTE: Otp is no longer required for registration flow,
-// but keeping import in case you want to reuse it later.
+// OTP model abhi use nahi ho raha, future ke liye rakha hai
 const Otp = require("../models/Otp");
 
 const jwt = require("jsonwebtoken");
@@ -93,8 +92,6 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
-    // 👉 Previously: generateOtpCode + save in DB + sendMail
-    // Ab ye sab frontend + EmailJS handle karega.
     console.log(
       "[sendOtp] OTP sending is handled on the frontend (EmailJS). Email:",
       email
@@ -128,8 +125,6 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // 👉 Previously: fetch Otp from DB, check expiry & code etc.
-    // Ab: frontend already verified entered OTP against what it sent.
     console.log(
       "[verifyOtp] OTP verification is handled on the frontend. Email:",
       email,
@@ -166,22 +161,12 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // 🔴 IMPORTANT:
-    // Pehle yahan Otp record check hota tha.
-    // Ab OTP frontend pe handle ho raha hai.
-
     const user = await User.create({
       name,
       email,
       password,
       role: "patient",
     });
-
-    // OTP DB record delete bhi ab needed nahi:
-    // await Otp.deleteOne({ email });
-
-    // ❌ Welcome email ab frontend se EmailJS bhejega
-    // (React Register.jsx me sendWelcomeEmail call ho raha hai)
 
     return res.status(201).json({
       success: true,
@@ -258,10 +243,6 @@ exports.registerDoctor = async (req, res) => {
       return res.status(400).json({ message: "Doctor already exists" });
     }
 
-    // 🔴 IMPORTANT:
-    // Pehle yahan bhi Otp record check hota tha.
-    // Ab OTP frontend pe verify ho chuka hota hai, so we skip DB check.
-
     const user = await User.create({
       name,
       email,
@@ -330,11 +311,6 @@ exports.registerDoctor = async (req, res) => {
       degreeUrl,
       status: "pending",
     });
-
-    // await Otp.deleteOne({ email }); // not needed now
-
-    // ❌ Welcome email ab frontend se EmailJS bhejega
-    // (React Register.jsx me sendWelcomeEmail call ho raha hai)
 
     return res.status(201).json({
       success: true,
@@ -434,7 +410,7 @@ exports.loginAdmin = async (req, res) => {
 
 /* ---------------------------------------------------------
    6️⃣ FORGOT PASSWORD 
-   ✅ NOW: only generate token + resetURL
+   ✅ ONLY: generate token + resetURL
    ✅ NO EMAIL FROM BACKEND
 --------------------------------------------------------- */
 exports.forgotPassword = async (req, res) => {
@@ -450,7 +426,7 @@ exports.forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    // Security: user na mile to bhi generic success response
+    // Security: user na mile to bhi generic success
     if (!user) {
       return res.json({
         success: true,
@@ -464,12 +440,13 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const baseUrl =
+    // FRONTEND_URL env se base URL – trailing slash hata diya
+    const rawBaseUrl =
       process.env.FRONTEND_URL || "http://localhost:5173";
+    const baseUrl = rawBaseUrl.replace(/\/$/, "");
 
     const resetURL = `${baseUrl}/reset-password/${token}`;
 
-    // ❌ NO EMAIL HERE – frontend EmailJS handle karega
     return res.json({
       success: true,
       resetURL,
