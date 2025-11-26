@@ -22,12 +22,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
-// 🔥 NEW PAGES (Admin verification + Pending screen)
+// 🔥 Admin pages
 import AdminDoctorVerification from "./pages/AdminDoctorVerification";
-import DoctorPending from "./pages/DoctorPending";
-
-// 🔥 NEW PAGE: Registered Patients list
 import AdminPatients from "./pages/AdminPatients";
+import AdminDoctorsList from "./pages/AdminDoctorsList";
+import AdminAppointments from "./pages/AdminAppointments";
+
+// 🔥 Doctor pending page
+import DoctorPending from "./pages/DoctorPending";
 
 const App = () => {
   return (
@@ -60,6 +62,26 @@ const App = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* All doctors list */}
+        <Route
+          path="/admin/doctors"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDoctorsList />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* All appointments list */}
+        <Route
+          path="/admin/appointments"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminAppointments />
             </ProtectedRoute>
           }
         />
