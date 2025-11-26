@@ -458,26 +458,43 @@ exports.forgotPassword = async (req, res) => {
 };
 
 /* ---------------------------------------------------------
-   7️⃣ RESET PASSWORD
+   7️⃣ RESET PASSWORD  (patients + doctors)
 --------------------------------------------------------- */
 exports.resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
 
+    // 1) Token se user nikaal lo (User collection)
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
     });
 
-    if (!user)
+    if (!user) {
       return res.status(400).json({ message: "Invalid or expired token" });
+    }
 
+    // 2) User ka password update (yahan pre-save hook hash kar dega)
     user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-
     await user.save();
+
+    // 3) Agar ye doctor account hai, to Doctor collection me bhi password update karo
+    if (user.role === "doctor") {
+      const hashed = await bcrypt.hash(password, 10);
+
+      await Doctor.findOneAndUpdate(
+        {
+          $or: [
+            { userId: user._id },   // naya data — userId se link
+            { email: user.email },  // purana data — email se link
+          ],
+        },
+        { password: hashed }
+      );
+    }
 
     return res.json({ success: true, message: "Password reset successful" });
   } catch (error) {
