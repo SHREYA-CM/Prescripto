@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import api from "../api/axios";
 import "./AuthForm.css";
-import { sendForgotPasswordEmail } from "../helpers/emailjsOtp"; // ✅ NEW IMPORT
+import { sendForgotPasswordEmail } from "../helpers/emailjsOtp";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -17,24 +17,33 @@ const ForgotPassword = () => {
     try {
       setLoading(true);
 
+      // 1) Backend se reset URL mangao
       const { data } = await api.post("/api/auth/forgot-password", { email });
 
-      if (data?.success) {
-        // backend sirf resetURL dega, email nahi bhejega
-        if (data.resetURL) {
-          try {
-            await sendForgotPasswordEmail(email, data.resetURL);
-          } catch (err) {
-            console.error("EmailJS forgot password error:", err);
-            // email fail ho jaye, phir bhi generic message
-          }
-        }
-
-        toast.success("Reset link sent to your email (if account exists)");
-        setEmail("");
-      } else {
-        toast.error(data?.message || "Failed to send reset link");
+      if (!data?.success) {
+        toast.error(data?.message || "Failed to generate reset link");
+        return;
       }
+
+      // user na mile to resetURL null ho sakta hai
+      if (!data.resetURL) {
+        toast.success(
+          "If this email exists, you will receive a reset link shortly"
+        );
+        setEmail("");
+        return;
+      }
+
+      // 2) EmailJS se reset link mail bhejo
+      try {
+        await sendForgotPasswordEmail(email, data.resetURL);
+      } catch (err) {
+        console.error("EmailJS forgot password error:", err);
+        // Agar email fail ho jaye to bhi user ko generic message
+      }
+
+      toast.success("Reset link sent to your email (if account exists)");
+      setEmail("");
     } catch (error) {
       console.error("Forgot password error:", error);
       const msg =
