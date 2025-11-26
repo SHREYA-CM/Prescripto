@@ -4,19 +4,15 @@ import emailjs from "@emailjs/browser";
 const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 
-// 🔐 Template IDs from .env
-// OTP template (One-Time Password)
+// Template IDs
 const templateOtpId = import.meta.env.VITE_EMAILJS_TEMPLATE_OTP;
-
-// Multi-purpose template ID (Welcome / Approved / Forgot sab isi se)
-// FREE plan me: in tino envs me SAME ID rakh sakti ho
 const templateWelcomeId = import.meta.env.VITE_EMAILJS_TEMPLATE_WELCOME;
 const templateApprovedId =
   import.meta.env.VITE_EMAILJS_TEMPLATE_APPROVED || templateWelcomeId;
 const templateForgotId =
   import.meta.env.VITE_EMAILJS_TEMPLATE_FORGOT || templateWelcomeId;
 
-// (optional) init – safe call
+// Init EmailJS
 if (publicKey) {
   emailjs.init(publicKey);
 } else {
@@ -48,8 +44,6 @@ export const sendOtpEmail = async (toEmail, otp) => {
     passcode: otp,
   };
 
-  console.log("EmailJS OTP → service:", serviceId, "template:", templateOtpId);
-
   const res = await emailjs.send(
     serviceId,
     templateOtpId,
@@ -61,7 +55,7 @@ export const sendOtpEmail = async (toEmail, otp) => {
   return true;
 };
 
-// 2️⃣ Welcome Email (multi-purpose template)
+// 2️⃣ Welcome Email
 export const sendWelcomeEmail = async (email, name, role) => {
   checkBaseConfig();
 
@@ -70,20 +64,17 @@ export const sendWelcomeEmail = async (email, name, role) => {
   }
 
   const templateParams = {
+    // subject for this email
+    subject: "Welcome to Prescripto",
     email,
     name,
     role,
-    isWelcome: true,
-    isApproved: false,
-    isForgot: false,
-  };
 
-  console.log(
-    "EmailJS Welcome → service:",
-    serviceId,
-    "template:",
-    templateWelcomeId
-  );
+    // flags
+    isWelcome: "1",
+    isApproved: "",
+    isForgot: "",
+  };
 
   const res = await emailjs.send(
     serviceId,
@@ -104,19 +95,14 @@ export const sendDoctorApprovedEmail = async (email, name) => {
   }
 
   const templateParams = {
+    subject: "Your Prescripto doctor account is approved",
     email,
     name,
-    isWelcome: false,
-    isApproved: true,
-    isForgot: false,
-  };
 
-  console.log(
-    "EmailJS Approved → service:",
-    serviceId,
-    "template:",
-    templateApprovedId
-  );
+    isWelcome: "",
+    isApproved: "1",
+    isForgot: "",
+  };
 
   const res = await emailjs.send(
     serviceId,
@@ -129,7 +115,7 @@ export const sendDoctorApprovedEmail = async (email, name) => {
 };
 
 // 4️⃣ Forgot Password Email
-export const sendForgotPasswordEmail = async (email, reset_url) => {
+export const sendForgotPasswordEmail = async (email, reset_url, name = "") => {
   checkBaseConfig();
 
   if (!templateForgotId) {
@@ -137,11 +123,14 @@ export const sendForgotPasswordEmail = async (email, reset_url) => {
   }
 
   const templateParams = {
+    subject: "Reset your Prescripto password",
     email,
+    name,
     reset_url,
-    isWelcome: false,
-    isApproved: false,
-    isForgot: true,
+
+    isWelcome: "",
+    isApproved: "",
+    isForgot: "1",
   };
 
   console.log(
