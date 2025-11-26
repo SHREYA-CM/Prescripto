@@ -1,3 +1,4 @@
+// src/App.jsx
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
@@ -24,6 +25,9 @@ import ResetPassword from "./pages/ResetPassword";
 // 🔥 NEW PAGES (Admin verification + Pending screen)
 import AdminDoctorVerification from "./pages/AdminDoctorVerification";
 import DoctorPending from "./pages/DoctorPending";
+
+// 🔥 NEW PAGE: Registered Patients list
+import AdminPatients from "./pages/AdminPatients";
 
 const App = () => {
   return (
@@ -66,6 +70,16 @@ const App = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDoctorVerification />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Registered patients page */}
+        <Route
+          path="/admin/patients"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminPatients />
             </ProtectedRoute>
           }
         />
